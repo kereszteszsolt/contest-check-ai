@@ -3,13 +3,13 @@
 > **Create programming challenges, evaluate anonymous submissions, and review objective results.**
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-D22128?style=flat-square)](LICENSE)
-![Status: Planned](https://img.shields.io/badge/status-planned-64748b?style=flat-square)
-![Python](https://img.shields.io/badge/Python-planned-3776AB?style=flat-square)
+![Status: In development](https://img.shields.io/badge/status-in_development-64748b?style=flat-square)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square)
 ![LangGraph](https://img.shields.io/badge/LangGraph-planned-1F2937?style=flat-square)
 
-**ContestCheck AI** is a planned, self-hosted **AI-assisted programming challenge generator and automated code judge** for teachers, programming competitions and independent practice. A teacher will be able to upload an anonymous submissions archive, check solutions against defined file-based tests, inspect per-test outcomes and runtimes, and download PDF/XLSX reports. An optional LangChain/LangGraph authoring workflow will later draft problem statements, examples, starter code and private test cases for teacher approval.
+**ContestCheck AI** is a self-hosted **AI-assisted programming challenge generator and automated code judge** in development for teachers, programming competitions and independent practice. A teacher will be able to upload an anonymous submissions archive, check solutions against defined file-based tests, inspect per-test outcomes and runtimes, and download PDF/XLSX reports. An optional LangChain/LangGraph authoring workflow will later draft problem statements, examples, starter code and private test cases for teacher approval.
 
-> **Current state: documentation-only repository baseline.** Neither the judge nor AI challenge generation is implemented, runnable, audited or tested. Releases 0.1 and 0.2 are **Planned**. The architecture and sample files below describe desired behavior, not an available service. **Never submit unknown code to an unverified sandbox.**
+> **Current state: CCA-001 archive-validation foundation.** The local Streamlit UI and FastAPI API validate task/submission ZIPs with a strict manifest and private temporary extraction. **Program execution is hard-disabled.** Release 0.1 is in progress; judging, verdicts, reports, Docker deployment and Release 0.2 AI authoring remain planned. The diagrams below describe the target system. See [local setup](docs/local-development.md) and [verification evidence](docs/releases/release-0.1-automated-judge/verification.md).
 
 ## What will users do?
 
@@ -84,7 +84,7 @@ The initial checker uses a documented text comparison rule for file-based I/O. R
 | Deployment | **Docker Compose**, with web/API/worker separation and no public judge endpoint |
 | Database | **None for MVP** — bounded temporary workspaces; optional small local checkpoint persistence later |
 
-Dependency versions, sandbox host requirements, and actual Docker commands will be established and verified during implementation. No build/deployment scripts are shipped yet.
+CCA-001 pins the Python web/validation dependencies in `pyproject.toml` and `uv.lock`; see the [dependency license inventory](docs/dependency-licenses.md). Sandbox host requirements and actual Docker commands remain future work.
 
 ## Proposed archive contracts
 
@@ -145,17 +145,18 @@ OPENROUTER_MODEL_3=
 
 Empty model slots do not appear in the UI. Cloud calls require configured server-side credentials and explicit user selection; no surprise fallback or unbounded loop. **Only selected prompts and draft materials** are sent to the chosen LLM. Student submissions are not automatically uploaded to an LLM. Refer to [Model configuration](docs/model-configuration.md).
 
-## Planned local setup (not yet runnable)
+## Local setup — archive validation only
 
-After the implementation stories supply project code and vetted container configuration, the intended developer workflow will be:
+Install dependencies, then start the API and UI in separate terminals from the repository root:
 
 ```bash
-cp .env.example .env
-# Review local sandbox prerequisites, limits, and model configuration.
-docker compose up --build
+uv sync --locked
+uv run --frozen uvicorn contest_check.api:app --host 127.0.0.1 --port 8000 --limit-concurrency 4
+# In another terminal:
+uv run --frozen streamlit run streamlit_app.py --server.port 8501
 ```
 
-The target Streamlit UI port is `http://localhost:8501`, but **the baseline has no `pyproject.toml`, Compose file, application source or sandbox binary**. Do not run unknown student submissions until the runner has passed its documented sandbox verification on the actual host. This is a local single-operator project; publishing an unauthenticated code execution endpoint on the internet is **out of scope and unsafe**.
+Open <http://127.0.0.1:8501>. Use `uv run --frozen python scripts/make_demo_archives.py` to create inert upload fixtures in `.runtime/demo/`. The [development guide](docs/local-development.md) documents repeatable tests, API responses and the future Docker service layout. No Compose file or sandbox is supplied. `.env` cannot enable execution. This is a local single-operator application; public deployment remains out of scope.
 
 ## Roadmap, stories and verification
 
@@ -164,7 +165,7 @@ The target Streamlit UI port is `http://localhost:8501`, but **the baseline has 
 | [Roadmap](docs/roadmap.md) | Release scope and ordering |
 | [Release 0.1 – Automated Judge](docs/releases/release-0.1-automated-judge/README.md) | Four Python judge/reporting stories |
 | [Release 0.2 – AI Challenge Authoring](docs/releases/release-0.2-ai-challenge-authoring/README.md) | Four LangChain/LangGraph authoring stories |
-| [Release 0.1 verification](docs/releases/release-0.1-automated-judge/verification.md) | Currently `Not run` |
+| [Release 0.1 verification](docs/releases/release-0.1-automated-judge/verification.md) | CCA-001 evidence; later stories `Not run` |
 | [Release 0.2 verification](docs/releases/release-0.2-ai-challenge-authoring/verification.md) | Currently `Not run` |
 | [Architecture](docs/architecture.md) | UI, orchestration, worker, agents and diagrams |
 | [Archive contracts](docs/archive-contracts.md) | Task/submission/student/teacher ZIP schemas |
@@ -176,7 +177,7 @@ The target Streamlit UI port is `http://localhost:8501`, but **the baseline has 
 | [Story workflow](docs/story-workflow.md) | Separate implementation/commit approval |
 | [Future ideas](docs/future.md) | Languages, scoring and features not yet committed |
 
-See [AGENTS.md](AGENTS.md) for the repository's mandatory workflow and source-license convention. **No source code has been generated in this repository baseline.**
+See [AGENTS.md](AGENTS.md) for the repository's mandatory workflow and source-license convention. Only CCA-001 is implemented; subsequent stories require separate implementation approval.
 
 ## License
 

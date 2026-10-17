@@ -1,0 +1,9 @@
+[server]
+address = "127.0.0.1"
+headless = true
+maxUploadSize = 10
+maxMessageSize = 22
+fileWatcherType = "none"
+
+[browser]
+gatherUsageStats = false

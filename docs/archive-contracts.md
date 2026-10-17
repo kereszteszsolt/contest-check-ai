@@ -1,10 +1,31 @@
-# Archive contracts — planned Release 0.1 / 0.2
+# Archive contracts — CCA-001 inputs / planned Release 0.2 exports
 
 ## Initial judge inputs
 
-**Teacher task ZIP** contains one challenge with `challenge/task-config.json` and `challenge/tests/NN.in` / `NN.out` pairs. The manifest describes `task_id`, `language: python`, `entry_file: main.py`, `input_filename`, `output_filename`, a bounded list of `test_id`s, comparison mode, time/memory/output limits and optional display metadata. Schemas and exact fields are finalized in CCA-001 with tests.
+**Teacher task ZIP** contains one challenge with `challenge/task-config.json` and exactly the declared `challenge/tests/<test_id>.in` / `<test_id>.out` pairs. CCA-001 implements validation and temporary extraction only; program execution remains disabled.
 
-**Submissions ZIP:** a bounded number of strictly numeric opaque folder IDs, each containing an expected `main.py` entrypoint and optional same-folder `.py` modules. Allow only relative paths and approved source extensions. A multi-task archive is **not** MVP scope.
+### Task manifest v0.1
+
+The strict Pydantic contract is `src/contest_check/models.py`; its generated [JSON Schema](task-config.schema.json) and the [complete example](../examples/task-config.json) are tested together. UTF-8 JSON only; reject duplicate keys, unknown fields and automatic string-to-number coercion. All fields below are required except `title`.
+
+| Field | Allowed value |
+| --- | --- |
+| `task_id` | ASCII letter/digit followed by up to 63 letters/digits/underscores/hyphens |
+| `language` | Exactly `python` |
+| `entry_file` | Exactly `main.py` |
+| `input_filename` | Lowercase ASCII basename matching `[a-z][a-z0-9_-]{0,47}\.(in\|txt)` |
+| `output_filename` | Lowercase ASCII basename matching `[a-z][a-z0-9_-]{0,47}\.(out\|txt)`; must differ from input |
+| `tests` | 1–100 objects, each containing only `test_id` |
+| `tests[].test_id` | ASCII letter/digit followed by up to 31 letters/digits/underscores/hyphens; unique ignoring case |
+| `comparison` | `exact` or `tokens`; planned comparison contracts, neither runs in CCA-001 |
+| `limits.time_seconds` | Finite number greater than 0 and at most 3 |
+| `limits.memory_mb` | Integer 1–256; booleans rejected |
+| `limits.output_bytes` | Integer 1–1,048,576; also caps each expected `.out` file |
+| `title` | Optional string of at most 160 characters or `null` |
+
+`exact` is intended to compare bytes; `tokens` is intended to compare whitespace-separated tokens. CCA-003 must verify these behaviors before verdicts are available. Runtime filenames are data, never shell command fragments. CCA-001 records limits but does not enforce runtime limits because it never launches a solution.
+
+**Submissions ZIP:** 1–100 strictly numeric opaque folder IDs, each containing exactly one `main.py` entrypoint and optional same-folder `.py` modules. IDs match `0|[1-9][0-9]{0,15}`; leading-zero aliases, signs, names and Unicode numerals are rejected. Filenames match `[A-Za-z_][A-Za-z0-9_]{0,63}\.py`. Maximum 30 files per participant. Only relative paths are accepted. A multi-task archive is **not** MVP scope.
 
 ```text
 submissions.zip
@@ -20,6 +41,16 @@ submissions.zip
 The worker places the manifest-named input file(s) in an isolated working directory before each run and retrieves only the expected output filename(s) afterwards. MVP supports one defined input and one defined output file per test. Additional files or stdin/stdout modes require explicit scope changes.
 
 ## Secure ingestion rules
+
+Fixed CCA-001 limits apply independently to each ZIP: 10 MiB uploaded/compressed archive, 50 MiB expanded data, 4,096 central-directory entries (including directory entries), 1 MiB per file, 64 KiB for the manifest, and a maximum 100:1 expansion ratio per file. Two uploads together can therefore extract at most 100 MiB. The API bounds the entire multipart request to 20 MiB + 64 KiB, including requests without an honest `Content-Length`. Limits are code constants in `ArchiveLimits`; `.env` does not override them in CCA-001.
+
+Only standard stored/deflated ZIPs are supported. ZIP64, split/encrypted archives, prepended stubs, trailing data and unsupported compression are rejected. Paths must be ASCII, contain no control characters, backslashes, drive prefixes, empty/dot/traversal segments, and remain unique ignoring case. Explicit empty directories are optional and must be ancestors of allowed files. Symlinks, devices and other special file entries are rejected.
+
+The central directory is counted before constructing ZIP member objects. All metadata, payload sizes, full deflate stream endings, CRCs, manifest fields and test-pair/submission layouts are checked **before creating the extraction directory**. Known nested archive signatures and ZIP end records are rejected even when renamed to an allowed extension. This is archive ingestion, not static source analysis or a general content-security scanner.
+
+Both complete validated packages extract to separate `task/` and `submissions/` subdirectories inside a random `cca-validate-*` system temporary directory (0700; files 0600). No uploaded names choose the root directory. The context manager removes the directory on success, consumer failure and partial extraction failure; the API returns only a summary after cleanup. Multipart upload spools are bounded by the request limit and closed before extraction. Process crashes/forced termination are outside normal context-manager cleanup; use the dedicated temporary filesystem proposed in the [local setup](local-development.md) for future containers.
+
+Errors describe invalid uploads, never cheating or disqualification. The API returns no private test payload, source text, manifest validation internals or local filesystem paths, and does not log request bodies.
 
 - Validate ZIP central directory, entry count, maximum compressed and uncompressed sizes, normalized paths, duplicate names and extensions **before extraction**.
 - Reject absolute paths, `..` traversals, symlinks, device entries, executables, nested archives, zip bombs, and unexpected or duplicate entrypoints; never trust Unicode or path normalization blindly.

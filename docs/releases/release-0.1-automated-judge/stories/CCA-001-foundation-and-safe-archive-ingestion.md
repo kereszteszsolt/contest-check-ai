@@ -2,7 +2,7 @@
 
 ## Status
 
-**Planned** — no implementation or verification exists.
+**Implemented and locally verified (2026-10-17).** See [verification.md](../verification.md) for unit/API/UI and live startup evidence, corrected failures and checks not run. Program execution remains hard-disabled.
 
 ## User story
 
@@ -18,13 +18,13 @@ Documentation and [archive contract](../../../archive-contracts.md). No judge wo
 
 ## Acceptance criteria
 
-- [ ] Streamlit UI and FastAPI API can start locally with documented, repeatable commands; they perform **no execution of student code**.
-- [ ] `task-config.json` has a documented/tested typed schema for one Python task, an allowlisted `main.py`, named file-based input/output and bounded tests/time/memory/output sizes.
-- [ ] A submissions ZIP with opaque numeric participant folders and optional sibling `.py` modules passes validation without requiring student names or accounts.
-- [ ] The validator rejects path traversal, absolute paths, symlinks, duplicate normalized names, nested archives, unexpected extensions, malformed manifests and compressed/uncompressed/archive-count excess **before extraction**.
-- [ ] All allowed files extract into an isolated, private, bounded temporary directory; cleanup is demonstrated on success/failure.
-- [ ] Invalid global ZIP data results in a clear upload error, **not an accusation of contestant cheating**; APIs do not log complete student source.
-- [ ] Unit/API tests cover valid and adversarial **non-executable** fixture archives; real execution stays disabled.
+- [x] Streamlit UI and FastAPI API can start locally with documented, repeatable commands; they perform **no execution of student code**.
+- [x] `task-config.json` has a documented/tested typed schema for one Python task, an allowlisted `main.py`, named file-based input/output and bounded tests/time/memory/output sizes.
+- [x] A submissions ZIP with opaque numeric participant folders and optional sibling `.py` modules passes validation without requiring student names or accounts.
+- [x] The validator rejects path traversal, absolute paths, symlinks, duplicate normalized names, nested archives, unexpected extensions, malformed manifests and compressed/uncompressed/archive-count excess **before extraction**.
+- [x] All allowed files extract into an isolated, private, bounded temporary directory; cleanup is demonstrated on success/failure.
+- [x] Invalid global ZIP data results in a clear upload error, **not an accusation of contestant cheating**; APIs do not log complete student source.
+- [x] Unit/API tests cover valid and adversarial **non-executable** fixture archives; real execution stays disabled.
 
 ## Out of scope
 

@@ -2,7 +2,7 @@
 
 ## Current repository status
 
-**Documentation-only baseline.** No Streamlit app, FastAPI routes, runnable judge, LangGraph workflow, Docker Compose service or build/test configuration exists yet. Releases 0.1 and 0.2 are **Planned**. Implement one approved `CCA-*` story at a time; do not mark features complete from documentation alone.
+**CCA-001 foundation implemented.** A local Streamlit app, FastAPI upload validation, strict task schema, safe bounded ZIP ingestion and focused tests now exist. Release 0.1 is **In progress**; the judge, LangGraph workflow, reports and Docker Compose services remain unimplemented. Release 0.2 is **Planned**. Implement one approved `CCA-*` story at a time; do not mark features complete from documentation alone.
 
 ## Target scope and boundaries
 
@@ -45,6 +45,6 @@ SPDX-License-Identifier: Apache-2.0
 
 For Python/shell use `#`, for JS/TS use `//`, for HTML use `<!-- ... -->`, etc. **Do not** add headers to generic or generated configuration, e.g. `.env.example`, JSON, YAML, TOML, Markdown, lockfiles, dependency metadata, Compose/Dockerfiles and generated sources. The full license remains in `LICENSE`. Preserve upstream notices and review third-party licenses separately; do not paste the full Apache text into each file.
 
-## No application source in this baseline
+## Baseline and implementation boundary
 
-This baseline has no runnable project; `docs/repository-baseline.md` enumerates deliberate omissions. README diagrams and `.env.example` describe **planned** behavior only.
+`docs/repository-baseline.md` distinguishes the original documentation baseline from the CCA-001 foundation. README diagrams describe the target system; `.env.example` remains planned configuration and cannot enable execution. Actual setup and verification are documented in `docs/local-development.md` and the active release verification record.

@@ -1,0 +1,122 @@
+{
+  "$defs": {
+    "ResourceLimits": {
+      "additionalProperties": false,
+      "properties": {
+        "time_seconds": {
+          "exclusiveMinimum": 0,
+          "maximum": 3,
+          "title": "Time Seconds",
+          "type": "number"
+        },
+        "memory_mb": {
+          "maximum": 256,
+          "minimum": 1,
+          "title": "Memory Mb",
+          "type": "integer"
+        },
+        "output_bytes": {
+          "maximum": 1048576,
+          "minimum": 1,
+          "title": "Output Bytes",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "time_seconds",
+        "memory_mb",
+        "output_bytes"
+      ],
+      "title": "ResourceLimits",
+      "type": "object"
+    },
+    "TestSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "test_id": {
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$",
+          "title": "Test Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "test_id"
+      ],
+      "title": "TestSpec",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "task_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$",
+      "title": "Task Id",
+      "type": "string"
+    },
+    "language": {
+      "const": "python",
+      "title": "Language",
+      "type": "string"
+    },
+    "entry_file": {
+      "const": "main.py",
+      "title": "Entry File",
+      "type": "string"
+    },
+    "input_filename": {
+      "pattern": "^[a-z][a-z0-9_-]{0,47}\\.(in|txt)$",
+      "title": "Input Filename",
+      "type": "string"
+    },
+    "output_filename": {
+      "pattern": "^[a-z][a-z0-9_-]{0,47}\\.(out|txt)$",
+      "title": "Output Filename",
+      "type": "string"
+    },
+    "tests": {
+      "items": {
+        "$ref": "#/$defs/TestSpec"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "title": "Tests",
+      "type": "array"
+    },
+    "comparison": {
+      "enum": [
+        "exact",
+        "tokens"
+      ],
+      "title": "Comparison",
+      "type": "string"
+    },
+    "limits": {
+      "$ref": "#/$defs/ResourceLimits"
+    },
+    "title": {
+      "anyOf": [
+        {
+          "maxLength": 160,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Title"
+    }
+  },
+  "required": [
+    "task_id",
+    "language",
+    "entry_file",
+    "input_filename",
+    "output_filename",
+    "tests",
+    "comparison",
+    "limits"
+  ],
+  "title": "TaskManifest",
+  "type": "object"
+}
