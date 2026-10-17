@@ -1,5 +1,23 @@
 # Dependency license inventory — CCA-001
 
+## CCA-004 reporting additions (2026-10-17)
+
+All earlier dependency versions are unchanged. Runtime adds [ReportLab 5.0.1](https://pypi.org/project/reportlab/5.0.1/) and [XlsxWriter 3.2.9](https://pypi.org/project/XlsxWriter/3.2.9/); development-only readers add [openpyxl 3.1.5](https://pypi.org/project/openpyxl/3.1.5/), [pypdf 6.21.1](https://pypi.org/project/pypdf/6.21.1/) and et-xmlfile 2.0.0. Installed wheel notices and metadata were inspected, not only the project classifiers:
+
+| Component | Installed notices / scope |
+| --- | --- |
+| ReportLab toolkit | BSD-3-Clause text in its distribution LICENSE; depends on already installed Pillow/charset-normalizer |
+| ReportLab bundled fonts | Bitstream Vera notice and DarkGarden GPL-2.0-or-later font notice with its document-embedding exception are retained in the installed package; these components are not represented as BSD-only |
+| XlsxWriter | BSD-2-Clause LICENSE.txt |
+| openpyxl / et-xmlfile | MIT; et-xmlfile also retains its Python standard-library-derived-code notice in LICENCE.python |
+| pypdf | BSD-3-Clause license text |
+
+The application uses ReportLab's built-in Helvetica and does not copy or embed the bundled Vera/DarkGarden fonts. No dependency source/font is vendored or modified and no new Docker image is published. The separate worker dependency group/image is unchanged: report libraries are installed only in the web/API environment. Upstream notices remain with the wheels; any later bundled/image distribution must preserve the applicable component notices and terms. The application's own source remains Apache-2.0. This is a targeted component inventory, not a complete legal audit of arbitrary future bundles.
+
+PDFium 5.14.0/Pillow 12.3.0 were used only in a temporary external inspection environment to render this story's generated PDF; PDFium is not an application/test dependency or shipped asset. Optional Node/Playwright/Chromium browser verification is also outside the Python runtime and its worker image.
+
+## Earlier foundation and worker inventory
+
 CCA-002 adds a separate worker image, not a change to these installed web-app dependency versions. Its pinned NsJail/Kafel and native runtime component review is in [judge-worker.md](judge-worker.md#licensing-and-distribution); native packages retain LGPL/GPL-with-exception and other component licenses. The image as a whole is not represented as exclusively Apache-2.0. No image was published.
 
 Observed on 2026-10-17 from installed Python 3.12.13 distribution metadata after the locked Linux sync. Versions and hashes are recorded in `uv.lock`. This is a metadata/license-notice review for the foundation, not a security audit or approval of the future judge. No third-party code is vendored or modified.

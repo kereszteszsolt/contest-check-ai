@@ -1,0 +1,56 @@
+{
+  "browser": "151.0.7922.34",
+  "viewports": [
+    "1440x1000",
+    "390x844"
+  ],
+  "upload_rejection": true,
+  "running_state": true,
+  "downloads": [
+    "pdf",
+    "xlsx"
+  ],
+  "stale_results_cleared": true,
+  "incomplete_batch": true,
+  "page_errors": [],
+  "blocked_external_origins": [],
+  "execution": "Mocked fixed inert fixtures; no student execution or Docker/model calls",
+  "report_checks": {
+    "pdf_text": true,
+    "xlsx_rows": 8,
+    "no_formulas": true
+  },
+  "sha256": {
+    "download.pdf": "6075395b54ff727dbe22fb81937641372ec4a2803c7ea5d5e8471e4f64ade389",
+    "download.xlsx": "92d2baeb68bf9d4e62193fe34036e0121015fd4c62313afb0fb2bfb413bcb616"
+  },
+  "pdf_visual_review": {
+    "renderer": "pypdfium2 5.14.0",
+    "pillow": "12.3.0",
+    "pages": 2,
+    "reviewed": true
+  },
+  "screenshots": {
+    "results-desktop.png": "16609b5885179322b2c1adcaca230f9640b668db6b7afc2e7fa3cfe661a6dd60",
+    "results-mobile.png": "f77321b89be667d439e7b46823d761c2e5279a90a94577df26e86a5d8b5cfedd",
+    "uploads-mobile.png": "3b3a962318da175d3b8a439d326bad4623002c0c39f41a0630cf3c70a8a829a7",
+    "incomplete-desktop.png": "8b0e317b4d7e027cbe02227b9979d83d2687772dee1d2d2af7a9f372464383a1",
+    "report-page-1.png": "d8b535a283557c286a72d5ba2321de79af0e4835bab863eb7123a5861b1f4935",
+    "report-page-2.png": "64fa51585b0638e4dc230f757de09a004fdef09471214452e2311915ce1e4b8a"
+  },
+  "report_bytes": {
+    "download.pdf": 4318,
+    "download.xlsx": 9558
+  },
+  "source_sha256": {
+    "src/contest_check/ui.py": "c08cf0c5932e53208b700da032e6426e1386135f1e3b0cc926f55db71427fe63",
+    "src/contest_check/api.py": "9b59b1335852978e35782bfac9758e4ec9284d5790ec0477deeccc3b3d2b786b",
+    "src/contest_check/reports.py": "f3d10664d1a49d821746661054ccc063dad0827929d983f520c45a43b48d53c3",
+    "src/contest_check/presentation.py": "5d466ccaa40cab53cabed8d8c3294f4bcd3ac8f231b099551855e27cda1b3ef5",
+    "src/contest_check/results.py": "e2c2f61fdd99ecd538a9c60b29335fc8a0b38f66260f4f9f5bdb7012375e4829",
+    "src/contest_check/judging.py": "690158846f778c95363d389b3471bd63a03ef7e6d527082e9bafbae39c139ae8",
+    "pyproject.toml": "46df72395057e450c8ba23c05d190b4122e5f85c8835b57d8416c8a19a8f1c86",
+    "uv.lock": "6b9b9fdd3e31f42886561f6ff8fc6e634d0c0ad12e87f267639ea54e9d383afb",
+    ".github/workflows/check.yml": "94d975b41493cacde5d3d0d0deece65ef43d6c390d32f44cd3abdde87df3cc83"
+  }
+}

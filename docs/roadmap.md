@@ -1,6 +1,6 @@
 # Roadmap
 
-The project is planned in **two independently verifiable releases**. Both are **Planned**; a story plan is not proof of implementation or user permission to start.
+The project has **two independently verifiable releases**. Release 0.1 is implemented and locally verified; Release 0.2 remains **Planned**. A story plan is not proof of implementation or user permission to start. The linked verification records define actual evidence and limitations.
 
 ## Release 0.1 — Automated Python Judge
 
@@ -8,10 +8,10 @@ Objective: upload valid task/submission ZIP files, safely and deterministically 
 
 | Story | Scope | Status |
 | --- | --- | --- |
-| [CCA-001](releases/release-0.1-automated-judge/stories/CCA-001-foundation-and-safe-archive-ingestion.md) | Python/Streamlit/FastAPI foundation and strict ZIP schemas | Planned |
-| [CCA-002](releases/release-0.1-automated-judge/stories/CCA-002-isolated-python-judge-worker.md) | Offline hardened worker and fail-closed sandbox | Planned |
-| [CCA-003](releases/release-0.1-automated-judge/stories/CCA-003-test-runner-and-verdicts.md) | Per-test verdicts, time and policy outcomes | Planned |
-| [CCA-004](releases/release-0.1-automated-judge/stories/CCA-004-ui-reports-and-verification.md) | Judge UI, PDF/XLSX, CI and release evidence | Planned |
+| [CCA-001](releases/release-0.1-automated-judge/stories/CCA-001-foundation-and-safe-archive-ingestion.md) | Python/Streamlit/FastAPI foundation and strict ZIP schemas | Implemented; locally verified |
+| [CCA-002](releases/release-0.1-automated-judge/stories/CCA-002-isolated-python-judge-worker.md) | Offline hardened worker and fail-closed sandbox | Implemented; host-specific sandbox evidence |
+| [CCA-003](releases/release-0.1-automated-judge/stories/CCA-003-test-runner-and-verdicts.md) | Per-test verdicts, time and policy outcomes | Implemented; fixed-fixture integration verified |
+| [CCA-004](releases/release-0.1-automated-judge/stories/CCA-004-ui-reports-and-verification.md) | Judge UI, PDF/XLSX, CI and release evidence | Implemented; browser/report checks passed, hosted CI Not run |
 
 [Release overview](releases/release-0.1-automated-judge/README.md) · [Verification](releases/release-0.1-automated-judge/verification.md)
 

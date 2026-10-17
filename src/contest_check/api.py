@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import UploadFile
 from starlette.exceptions import HTTPException
@@ -15,11 +15,13 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from contest_check.archives import DEFAULT_LIMITS, InvalidUpload, validated_workspace
 from contest_check.judging import judge_archives
 from contest_check.models import UploadError, ValidationSummary
+from contest_check.reports import MAX_REPORT_REQUEST_BYTES, MIME_TYPES, ReportLimit, build_report
 from contest_check.results import BatchResult
 from contest_check.worker_transport import DockerWorker, configured
 
 MAX_REQUEST_BYTES = 2 * DEFAULT_LIMITS.archive_bytes + 65_536
 JUDGE_SLOT = threading.BoundedSemaphore(1)
+REPORT_SLOT = threading.BoundedSemaphore(1)
 UPLOAD_BODY = {
     "requestBody": {
         "required": True,
@@ -45,40 +47,44 @@ def error_response(code: str, message: str, status: int = 400) -> JSONResponse:
 
 
 class BoundedUploadBody:
-    """Bound the actual body before multipart parsing, even without Content-Length."""
+    """Bound bodies before multipart/JSON parsing, even without Content-Length."""
 
     def __init__(self, app: ASGIApp):
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or scope["path"] not in {"/api/validate", "/api/judge"}:
+        report = scope.get("path", "").startswith("/api/reports/")
+        if scope["type"] != "http" or (
+            not report and scope["path"] not in {"/api/validate", "/api/judge"}
+        ):
             await self.app(scope, receive, send)
             return
+        maximum = MAX_REPORT_REQUEST_BYTES if report else MAX_REQUEST_BYTES
         headers = dict(scope["headers"])
         try:
             length = int(headers.get(b"content-length", b"0"))
             if length < 0:
                 raise ValueError
         except ValueError:
-            await error_response("request_size", "Invalid upload Content-Length.")(
+            await error_response("request_size", "Invalid request Content-Length.")(
                 scope, receive, send
             )
             return
         body = bytearray()
-        if length <= MAX_REQUEST_BYTES:
+        if length <= maximum:
             while True:
                 message = await receive()
                 if message["type"] == "http.disconnect":
                     return
                 chunk = message.get("body", b"")
-                if len(body) + len(chunk) > MAX_REQUEST_BYTES:
-                    length = MAX_REQUEST_BYTES + 1
+                if len(body) + len(chunk) > maximum:
+                    length = maximum + 1
                     break
                 body.extend(chunk)
                 if not message.get("more_body", False):
                     break
-        if length > MAX_REQUEST_BYTES:
-            await error_response("request_size", "Upload exceeds the request size limit.", 413)(
+        if length > maximum:
+            await error_response("request_size", "Request exceeds the body size limit.", 413)(
                 scope, receive, send
             )
             return
@@ -202,6 +208,31 @@ async def judge_upload(
         JUDGE_SLOT.release()
 
 
-@app.get("/api/reports/{report_format}", status_code=501, response_model=UploadError)
-def reports_unavailable(report_format: Literal["pdf", "xlsx"]):
-    return UploadError(code="reports_unavailable", message="Report export is not implemented yet.")
+@app.post("/api/reports/{report_format}", response_class=Response)
+async def export_report(report_format: Literal["pdf", "xlsx"], batch: BatchResult):
+    if not REPORT_SLOT.acquire(blocking=False):
+        return error_response(
+            "report_busy", "Another report is being prepared. Try again later.", 503
+        )
+    try:
+        try:
+            content = await run_in_threadpool(build_report, report_format, batch)
+        except ReportLimit:
+            return error_response("report_size", "Report exceeds the export size limit.", 413)
+        except Exception:
+            return error_response(
+                "report_failed", "Report preparation failed. Try again later.", 503
+            )
+        return Response(
+            content,
+            media_type=MIME_TYPES[report_format],
+            headers={
+                "Content-Disposition": (
+                    f'attachment; filename="contestcheck-results.{report_format}"'
+                ),
+                "Cache-Control": "no-store",
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
+    finally:
+        REPORT_SLOT.release()

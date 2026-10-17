@@ -1,6 +1,6 @@
 # CCA-002 — isolated one-shot Python worker
 
-CCA-002 supplies a separate, offline worker image and a typed stdin/stdout protocol. CCA-003 now connects it to the explicitly configured local API and performs verdict comparison outside the worker; see [judging.md](judging.md). The current image tag is `contest-check-worker:cca003`. Actual host-specific evidence is recorded in [Release 0.1 verification](releases/release-0.1-automated-judge/verification.md). There is no network worker endpoint, background queue or account system. Streamlit judging/results remain CCA-004 work.
+CCA-002 supplies a separate, offline worker image and a typed stdin/stdout protocol. CCA-003 connects it to the explicitly configured local API and performs verdict comparison outside the worker; see [judging.md](judging.md). CCA-004 adds the [Streamlit UI and exports](verdicts-and-reporting.md) without changing the worker. The current image tag is `contest-check-worker:cca003`. Actual host-specific evidence is recorded in [Release 0.1 verification](releases/release-0.1-automated-judge/verification.md). There is no network worker endpoint, background queue or account system.
 
 ## Pinned backend and supported host
 

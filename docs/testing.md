@@ -1,13 +1,13 @@
 # Test and verification strategy
 
-## Baseline
+## Current implementation
 
-Documentation-only: **no application source, dependencies, judge implementation or test suite exists yet**. The test commands will be added during approved stories and evidence recorded in the active verification file.
+CCA-001–004 implement Release 0.1. Run `uv run --frozen pytest -q`, `uv run --frozen ruff check .` and `uv run --frozen ruff format --check .` after locked development setup. Default tests use inert archives and mocked workers; they do not execute contestant programs. [Release evidence](releases/release-0.1-automated-judge/verification.md) separates unit/API/AppTest, real mocked-worker browser/download checks and the earlier real host-specific NsJail checks. [UI/report verification](verdicts-and-reporting.md#safe-verification-and-offline-mode) describes the optional browser harness. Hosted CI has not yet run. Release 0.2 checks below remain planned.
 
 ## Release 0.1
 
 1. Unit tests for ZIP central directory inspection, path normalization, archive caps, task manifests and invalid participant directory names.
-2. Mock judge runner tests for `AC`, `WA`, `TLE`, `MLE`, `RE`, policy DQ, review flag, and system error; output comparison normalization explicitly tested.
+2. Mock judge runner tests for `AC`, `WA`, `TLE`, `RE`, policy DQ, review flag and system error; exact/token byte comparison explicitly tested. `MLE` remains reserved because the worker lacks reliable per-test OOM evidence.
 3. Hardened sandbox integration tests on a supported Linux environment using **benign fixtures only**, including network, filesystem, timing/memory limits and process cleanup. These checks **gate execution**.
 4. API/UI tests for task upload, multiple participants, invalid archive feedback, per-test results and downloads.
 5. PDF/XLSX checks for report shape, no private tests, escaped formula strings and repeatable ordering. Tests that require actual office/PDF readers may remain manual but must be disclosed.

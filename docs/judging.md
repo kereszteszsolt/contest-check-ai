@@ -20,7 +20,7 @@ Both explicit environment settings are required. `.env` is not loaded automatica
 
 The supported coordinator runs natively from the source checkout on the qualified Linux/WSL2 host, with a Docker CLI and access to **only the fixed local daemon address** `unix:///var/run/docker.sock`. The operator/coordinator is trusted and has Docker administration access. No Docker socket is mounted into any worker. Inherited Docker hosts, contexts and credentials cannot redirect the transport. The command is fixed, uses no shell and permits no upload-supplied argument, image, volume, environment or URL. Images are built explicitly beforehand; runtime uses `--pull=never` and never builds or downloads packages. Public exposure and containerizing the API are outside this story.
 
-`POST /api/judge` takes the same two bounded multipart ZIP fields as `/api/validate`. Only one batch is admitted per API process; concurrent attempts return 503 `judge_busy`. Use one API process. A batch is synchronous and performs no retries. The Streamlit results screen and PDF/XLSX downloads remain CCA-004 work; its existing Run button remains disabled.
+`POST /api/judge` takes the same two bounded multipart ZIP fields as `/api/validate`. Only one batch is admitted per API process; concurrent attempts return 503 `judge_busy`. Use one API process. A batch is synchronous and performs no retries. CCA-004 now provides the Streamlit validation/run/result flow and PDF/XLSX downloads; see [the UI/export contract](verdicts-and-reporting.md). The result includes ordered `test_ids`, allowing reports to list every not-run test without inventing identifiers.
 
 ## Per-test lifecycle
 

@@ -55,3 +55,74 @@ def submissions_zip():
             ("1002/main.py", INERT_SOURCE),
         ]
     )
+
+
+@pytest.fixture
+def report_batch():
+    from contest_check.results import BatchResult
+
+    def test(test_id, verdict="AC"):
+        return {
+            "test_id": test_id,
+            "verdict": verdict,
+            "reason": "output_matched" if verdict == "AC" else "output_mismatch",
+            "wall_seconds": 0.125,
+        }
+
+    return BatchResult.model_validate(
+        {
+            "status": "completed",
+            "task_id": "addition",
+            "comparison": "exact",
+            "limits": {"time_seconds": 0.5, "memory_mb": 128, "output_bytes": 1024},
+            "tests_per_participant": 2,
+            "test_ids": ["z", "a"],
+            "participants": [
+                {
+                    "participant_id": "1001",
+                    "status": "completed",
+                    "passed_tests": 1,
+                    "failed_tests": 1,
+                    "system_errors": 0,
+                    "not_run_tests": 0,
+                    "tests": [test("z"), test("a", "WA")],
+                    "findings": [],
+                },
+                {
+                    "participant_id": "1002",
+                    "status": "REVIEW",
+                    "passed_tests": 2,
+                    "failed_tests": 0,
+                    "system_errors": 0,
+                    "not_run_tests": 0,
+                    "tests": [test("z"), test("a")],
+                    "findings": [
+                        {
+                            "status": "REVIEW",
+                            "rule": "review_imports",
+                            "reason": "import_requires_review",
+                            "module": "socket",
+                        }
+                    ],
+                },
+                {
+                    "participant_id": "1003",
+                    "status": "DQ",
+                    "passed_tests": 0,
+                    "failed_tests": 0,
+                    "system_errors": 0,
+                    "not_run_tests": 2,
+                    "tests": [],
+                    "findings": [
+                        {
+                            "status": "DQ",
+                            "rule": "max_source_bytes",
+                            "reason": "source_size_exceeded",
+                            "observed_bytes": 2048,
+                            "limit_bytes": 1024,
+                        }
+                    ],
+                },
+            ],
+        }
+    )

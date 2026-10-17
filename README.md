@@ -7,9 +7,9 @@
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square)
 ![LangGraph](https://img.shields.io/badge/LangGraph-planned-1F2937?style=flat-square)
 
-**ContestCheck AI** is a self-hosted **AI-assisted programming challenge generator and automated code judge** in development for teachers, programming competitions and independent practice. A teacher will be able to upload an anonymous submissions archive, check solutions against defined file-based tests, inspect per-test outcomes and runtimes, and download PDF/XLSX reports. An optional LangChain/LangGraph authoring workflow will later draft problem statements, examples, starter code and private test cases for teacher approval.
+**ContestCheck AI** is a self-hosted **automated Python judge** for teachers, programming competitions and independent practice, with AI-assisted challenge authoring planned. A local teacher can upload an anonymous submissions archive, check solutions against defined file-based tests, inspect per-test outcomes and runtimes, and download PDF/XLSX reports. An optional LangChain/LangGraph authoring workflow will later draft problem statements, examples, starter code and private test cases for teacher approval.
 
-> **Current state: CCA-001–003 implemented.** The local Streamlit/FastAPI application validates task/submission ZIPs; an explicitly configured local API now returns deterministic per-test verdicts and anonymous summaries through separately qualified offline NsJail workers. Every test gets a fresh time budget and automatic cleanup. **The Streamlit results screen and PDF/XLSX exports remain CCA-004 work.** Release 0.1 is in progress; Release 0.2 AI authoring remains planned. See [local setup](docs/local-development.md), [judging and policy](docs/judging.md), [worker boundaries](docs/judge-worker.md), and [verification evidence](docs/releases/release-0.1-automated-judge/verification.md).
+> **Current state: Release 0.1 / CCA-001–004 implemented and locally verified.** Streamlit provides validation, judging, anonymous per-test results and PDF/XLSX downloads. The local API requires explicit operator configuration and a separately qualified offline worker for every test, with a fresh time budget and automatic cleanup. Real Docker/WSL2 sandbox evidence and mocked-worker browser/report checks are recorded separately. **Release 0.2 AI authoring remains planned.** See [local setup](docs/local-development.md), [judging/policy](docs/judging.md), [UI/reports](docs/verdicts-and-reporting.md), [worker boundaries](docs/judge-worker.md), and [actual verification](docs/releases/release-0.1-automated-judge/verification.md). Public deployment and universal safety are not claimed.
 
 ## What will users do?
 
@@ -156,7 +156,7 @@ uv run --frozen uvicorn contest_check.api:app --host 127.0.0.1 --port 8000 --lim
 uv run --frozen streamlit run streamlit_app.py --server.port 8501
 ```
 
-Open <http://127.0.0.1:8501> to validate archives. Use `uv run --frozen python scripts/make_demo_archives.py` to create inert upload fixtures in `.runtime/demo/`. The [development guide](docs/local-development.md) documents validation tests and API responses. For local API judging, follow [judging.md](docs/judging.md): both explicit operator settings and a built [worker](docs/judge-worker.md) are required, and every test must pass sandbox qualification. `.env` is not loaded automatically. Public deployment remains out of scope.
+Open <http://127.0.0.1:8501>. Use `uv run --frozen python scripts/make_demo_archives.py` to create inert validation fixtures in `.runtime/demo/`; their comment-only sources are not correct solutions. For judging, first follow [judging.md](docs/judging.md) to build/qualify the worker and start the API with both explicit operator settings. Then upload, validate, run, review the tables and prepare/download PDF/XLSX reports. `.env` is not loaded automatically. The [development guide](docs/local-development.md) documents actual native services and the worker-only Compose layout.
 
 ## Roadmap, stories and verification
 
@@ -165,7 +165,7 @@ Open <http://127.0.0.1:8501> to validate archives. Use `uv run --frozen python s
 | [Roadmap](docs/roadmap.md) | Release scope and ordering |
 | [Release 0.1 – Automated Judge](docs/releases/release-0.1-automated-judge/README.md) | Four Python judge/reporting stories |
 | [Release 0.2 – AI Challenge Authoring](docs/releases/release-0.2-ai-challenge-authoring/README.md) | Four LangChain/LangGraph authoring stories |
-| [Release 0.1 verification](docs/releases/release-0.1-automated-judge/verification.md) | CCA-001/002/003 evidence; CCA-004 `Not run` |
+| [Release 0.1 verification](docs/releases/release-0.1-automated-judge/verification.md) | CCA-001–004 checks, browser/report artifacts and host-specific sandbox evidence |
 | [Release 0.2 verification](docs/releases/release-0.2-ai-challenge-authoring/verification.md) | Currently `Not run` |
 | [Architecture](docs/architecture.md) | UI, orchestration, worker, agents and diagrams |
 | [Archive contracts](docs/archive-contracts.md) | Task/submission/student/teacher ZIP schemas |
@@ -177,7 +177,7 @@ Open <http://127.0.0.1:8501> to validate archives. Use `uv run --frozen python s
 | [Story workflow](docs/story-workflow.md) | Separate implementation/commit approval |
 | [Future ideas](docs/future.md) | Languages, scoring and features not yet committed |
 
-See [AGENTS.md](AGENTS.md) for the repository's mandatory workflow and source-license convention. CCA-001/002/003 are implemented; subsequent stories require separate implementation approval.
+See [AGENTS.md](AGENTS.md) for the repository's mandatory workflow and source-license convention. CCA-001–004 are implemented; Release 0.2 stories require separate implementation approval.
 
 ## License
 

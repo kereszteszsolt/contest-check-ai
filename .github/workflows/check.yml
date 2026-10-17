@@ -1,0 +1,32 @@
+name: Safe Python checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      JUDGE_EXECUTION_ENABLED: "false"
+      JUDGE_REVIEWED_PROFILE: "false"
+      OPENROUTER_API_KEY: ""
+      OLLAMA_BASE_URL: ""
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+        with:
+          version: "0.11.29"
+          enable-cache: true
+      - run: uv sync --locked --python 3.12.13
+      - run: uv run --frozen ruff check .
+      - run: uv run --frozen ruff format --check .
+      # Pytest uses mocked workers and inert fixtures. No Docker/sandbox scripts,
+      # submitted programs, provider credentials or model calls run in CI.
+      - run: uv run --frozen pytest -q

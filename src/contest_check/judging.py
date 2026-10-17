@@ -202,5 +202,6 @@ def judge_archives(
             comparison=manifest.comparison,
             limits=manifest.limits,
             tests_per_participant=count,
+            test_ids=[test.test_id for test in manifest.tests],
             participants=participants,
         )

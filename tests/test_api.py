@@ -159,10 +159,9 @@ def test_execution_cannot_be_enabled_by_environment(client, monkeypatch):
 
 
 @pytest.mark.parametrize("report_format", ["pdf", "xlsx"])
-def test_placeholder_report_contract(client, report_format):
+def test_reports_have_no_public_stored_download_endpoint(client, report_format):
     response = client.get(f"/api/reports/{report_format}")
-    assert response.status_code == 501
-    assert response.json()["code"] == "reports_unavailable"
+    assert response.status_code == 405
 
 
 def test_openapi_documents_multipart_fields(client):

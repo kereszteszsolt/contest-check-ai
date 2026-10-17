@@ -1,13 +1,13 @@
 # Release 0.1 verification
 
-**Status: CCA-001/002/003 locally verified, release incomplete.** Archive validation, separately qualified offline workers and deterministic typed batch results exist. The explicitly configured local API passed fixed-fixture Docker/WSL2 integration. Streamlit judging/results and report exports remain unimplemented. No unknown contestant programs have been run.
+**Status: Release 0.1 / CCA-001–004 implemented and locally verified.** Archive validation, separately qualified offline workers, typed batch results, Streamlit judging/results and PDF/XLSX exports exist. The configured local API passed fixed-fixture Docker/WSL2 integration in CCA-003; CCA-004 browser/report checks use a fixed mocked worker and are separate evidence. No unknown contestant programs have been run. Hosted CI/public deployment are not claimed verified.
 
 | Story | State | Unit / API checks | Sandbox / UI / export checks | Notes |
 | --- | --- | --- | --- | --- |
-| CCA-001 | Implemented | See dated evidence below | UI AppTest + local HTTP startup/upload checks; sandbox/export Not run | Execution hard-disabled; report endpoints are placeholders |
-| CCA-002 | Implemented | Mocked worker/contract tests | Real Docker/NsJail qualification + six benign runtime cases | Host-specific evidence below; no unsafe fallback; web/API execution disabled |
-| CCA-003 | Implemented | Deterministic mapping/order/policy/transport/API checks | Real API-service-to-NsJail fixed-fixture batch; 38-check startup qualification | Configured local API only; metrics unavailable honestly; no scores; CCA-004 UI/exports Not run |
-| CCA-004 | Planned | Not run | Not run | Only CCA-001 upload UI exists; no results UI, XLSX/PDF exporter or CI |
+| CCA-001 | Implemented | See dated evidence below | UI AppTest + local HTTP startup/upload checks | Safe archive boundary retained |
+| CCA-002 | Implemented | Mocked worker/contract tests | Real Docker/NsJail qualification + six benign runtime cases | Host-specific evidence below; no unsafe fallback |
+| CCA-003 | Implemented | Deterministic mapping/order/policy/transport/API checks | Real API-service-to-NsJail fixed-fixture batch; 38-check startup qualification | Configured local API only; metrics unavailable honestly; no scores |
+| CCA-004 | Implemented | Final suite: 330 passed; lint/format passed | Real local browser with mocked worker, PDF visual review, independent XLSX parsing and 100 × 100 report tests | Safe CI configured; hosted CI Not run; worker unchanged |
 
 ## Evidence instructions
 
@@ -255,3 +255,109 @@ Mocked checks additionally cover malformed/oversized/unsupported worker response
 - The test harness now retains safe partial result metadata if an assertion fails; it never prints source or private expected outputs. The initial failed run returned no success artifact and was not represented as passing evidence.
 
 **Not run:** unknown contestant programs/malware; browser-driven judging/results; actual HTTP socket/uvicorn judging; PDF/XLSX; model calls; CI sandbox execution; public deployment/image publication; other kernels/architectures/Windows-native execution; host/API crash recovery or a persistent queue; independent exploit audit. Full runtime qualification per one-shot test adds startup overhead; large batches are synchronous. Missing CPU/memory metrics and reserved MLE are explicit limits. The Streamlit screen remains validation-only with its Run button disabled. CCA-004 and Release 0.2 were not implemented. No commit or push was performed during implementation/verification.
+
+## 2026-10-17 — CCA-004 UI, reports and MVP verification
+
+Authorization: the user explicitly requested implementation of CCA-004. Implementation and verification completed without a commit; the user subsequently gave separate approval to commit the reviewed changes. This work completes that story only. No push, public deployment or model call was requested or performed.
+
+### Implemented scope and dependency review
+
+Streamlit now supports validation, an honest indeterminate running stage, anonymous summary/per-test tables, separate DQ/review tables, incomplete batches, report preparation and PDF/XLSX downloads. Changing an upload, revalidating or starting a new run clears previous results/downloads. Report errors retain results. Downloads do not rerun judging.
+
+The report API accepts only bounded typed result JSON, including ordered test IDs, with coherent counts and policy evidence. Unknown/private fields and untrusted diagnostics are refused without echoing them. Each JSON body and artifact is capped at 8 MiB; one report generation is admitted per API process. Both exporters operate in memory, preserve not-run tests and unavailable measurements, and omit source and private test contents. PDF uses built-in Helvetica and repeated table headers. XLSX writes identifiers as text, disables formulas/URL detection, neutralizes unsafe prefixes/control characters and uses four distinct sheets.
+
+New runtime packages: ReportLab **5.0.1**, XlsxWriter **3.2.9**. Development-only independent readers: openpyxl **3.1.5**, pypdf **6.21.1**, with et-xmlfile **2.0.0**. Existing dependency versions and the worker group/requirements were preserved. Installed notices were inspected: ReportLab toolkit BSD-3-Clause, XlsxWriter BSD-2-Clause, openpyxl/et-xmlfile MIT and pypdf BSD-3-Clause. ReportLab also bundles separately licensed Vera/DarkGarden font resources; those notices are retained and these exports do not embed those fonts. See [dependency inventory](../../dependency-licenses.md) for the exact redistribution boundary. No dependency was vendored or modified and no new image was published.
+
+### Environment and exact automated commands
+
+Linux/WSL2 environment and Python locations are the same as the preceding evidence: CPython **3.12.13**, uv **0.11.29**, pytest **9.1.1**, Ruff **0.17.1** in `/tmp/cca001-venv`. Installation required authorized development network access, separate from application runtime.
+
+```bash
+UV_CACHE_DIR=/tmp/cca001-uv-cache UV_PYTHON_INSTALL_DIR=/tmp/cca001-python UV_PROJECT_ENVIRONMENT=/tmp/cca001-venv uv add --bounds exact reportlab xlsxwriter
+UV_CACHE_DIR=/tmp/cca001-uv-cache UV_PYTHON_INSTALL_DIR=/tmp/cca001-python UV_PROJECT_ENVIRONMENT=/tmp/cca001-venv uv add --dev --bounds exact openpyxl pypdf
+/tmp/cca001-venv/bin/pytest -q tests/test_reports.py tests/test_judging.py
+/tmp/cca001-venv/bin/pytest -q tests/test_reports.py
+/tmp/cca001-venv/bin/pytest -q tests/test_reports.py tests/test_ui.py
+/tmp/cca001-venv/bin/pytest -q tests/test_reports.py -k maximum
+timeout 60s /tmp/cca001-venv/bin/pytest -q -o faulthandler_timeout=15
+/tmp/cca001-venv/bin/ruff check .
+/tmp/cca001-venv/bin/ruff format --check .
+UV_CACHE_DIR=/tmp/cca001-uv-cache UV_PYTHON_INSTALL_DIR=/tmp/cca001-python UV_PROJECT_ENVIRONMENT=/tmp/cca001-venv uv sync --locked --offline
+git diff HEAD --exit-code -- src/contest_check/judge src/contest_check/models.py deploy/worker
+```
+
+Observed results, in order: initial report/judging checks **80 passed, 3 warnings**; after the warning corrections below, report-only **26 passed in 1.27s** without warnings; report/UI **40 passed in 5.45s**. The two subsequently added maximum-batch cases passed (**2 passed in 20.41s**): both formats represent **100 participants × 100 tests** within the output cap, including the last declared participant/test. The final complete suite passed **330 tests, 1 warning in 21.69s**. The remaining warning is the existing Starlette HTTPX TestClient deprecation, not suppressed. The suite uses inert archive fixtures and mocked workers, with no contestant execution, Docker or model traffic. API/TestClient checks used the authorized environment because of the restricted cross-thread socket limitation already recorded for CCA-001.
+
+Final Ruff: **All checks passed**; format: **67 files already formatted**. Final locked offline sync: **56 packages resolved, 54 checked**, no lockfile change. A direct comparison of `HEAD:uv.lock` with the new lock confirmed all existing versions unchanged. The worker/source/config diff command exited **0**: judge modules, task/resource schema, worker Dockerfiles/profiles/requirements and deployment are unchanged.
+
+CI is defined in [check.yml](../../../.github/workflows/check.yml), with read-only contents permission, no persisted checkout credentials, execution flags false, empty provider settings and only locked install/lint/format/mocked pytest steps. Action revisions were resolved from the upstream repositories:
+
+```bash
+git ls-remote https://github.com/actions/checkout.git refs/tags/v7
+git ls-remote https://github.com/astral-sh/setup-uv.git refs/tags/v7
+```
+
+Pinned revisions: checkout `3d3c42e5aac5ba805825da76410c181273ba90b1`, setup-uv `94527f2e458b27549849d47d273a16bec83a01e9`. Python 3.12.13 and uv 0.11.29 are explicit. The workflow was manually reviewed; hosted GitHub Actions has **not run** in this task.
+
+### Actual browser and downloaded report checks
+
+The optional checked-in operator harness starts real loopback FastAPI/Streamlit services, supplies only its own inert archives and overrides the worker with fixed responses. It accepts no external source file. Browser versions: Node **24.18.0**, Playwright **1.62.1**, Chromium **151.0.7922.34**. Existing extracted browser libraries were used under `/tmp`; no system or worker sandbox configuration was changed.
+
+Successful command:
+
+```bash
+LD_LIBRARY_PATH=/tmp/task-flow-svg-check/browser-libs/extracted/usr/lib/x86_64-linux-gnu CCA_BROWSER_NODE=/home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin/node CCA_PLAYWRIGHT_MODULE=/tmp/open-nook-onk001-browser/node_modules/playwright /tmp/cca001-venv/bin/python scripts/verify_ui_reports.py --output /tmp/cca004-ui-verification
+```
+
+Observed: **exit 0**, desktop **1440 × 1000**, mobile **390 × 844**, invalid upload rejection, real running-stage visibility, completed results, both attachment downloads, upload-change stale-result/download removal and an incomplete system-error batch all passed. No browser page errors, unexpected external requests or page-level horizontal overflow were observed. The tables retain internal horizontal scrolling on narrow screens. Only the harness's own service process groups were stopped in `finally`; fixture ZIPs were removed with its temporary directory.
+
+Fixture metadata: task `offline-ui-fixture`, manifest tests `z`, `a`; anonymous participants `1001` (synthetic AC/AC), `1002` (synthetic WA/WA plus static REVIEW), `1003` (synthetic TLE/TLE), `1004` (objective 1,025-byte/1,024-byte policy DQ, no worker call). A separate fixed system-error response proves incomplete/not-run presentation. These verdicts and timings are **test data**, not observed student execution or algorithm benchmarks.
+
+The PDF downloaded through the actual UI was **4,318 bytes**, SHA-256 `6075395b54ff727dbe22fb81937641372ec4a2803c7ea5d5e8471e4f64ade389`; XLSX **9,558 bytes**, SHA-256 `92d2baeb68bf9d4e62193fe34036e0121015fd4c62313afb0fb2bfb413bcb616`. pypdf read the PDF text; openpyxl independently read all **8** detailed test rows and confirmed no formulas. Unit tests additionally inspect sheet names, IDs, policies, numeric values, links/macros, deterministic bytes, privacy and maximum-batch output.
+
+Both PDF pages were rendered with an optional temporary tool environment and visually inspected alongside desktop/mobile UI screenshots:
+
+```bash
+UV_CACHE_DIR=/tmp/cca001-uv-cache UV_PYTHON_INSTALL_DIR=/tmp/cca001-python uv run --no-project --python /tmp/cca001-venv/bin/python --with pypdfium2 --with pillow python - <<'PY'
+from pathlib import Path
+import pypdfium2 as pdfium
+
+folder = Path("/tmp/cca004-ui-verification")
+document = pdfium.PdfDocument(folder / "download.pdf")
+for index in range(len(document)):
+    page = document[index]
+    bitmap = page.render(scale=1.5)
+    bitmap.to_pil().save(folder / f"report-page-{index + 1}.png")
+    bitmap.close()
+    page.close()
+document.close()
+PY
+```
+
+Renderer: **pypdfium2 5.14.0**, Pillow **12.3.0**, **2 pages**. PDF tables/units fit the page, headers and page numbers are readable, and DQ/review are distinct. These optional rendering tools were not added to application or worker dependencies.
+
+Checked-in evidence contains only fixed-fixture metadata and six real captures, with source/artifact hashes in [verification.json](evidence/cca004/verification.json):
+
+- [Desktop results](evidence/cca004/results-desktop.png), [mobile results](evidence/cca004/results-mobile.png), [mobile uploads](evidence/cca004/uploads-mobile.png).
+- [Incomplete batch](evidence/cca004/incomplete-desktop.png).
+- [PDF page 1](evidence/cca004/report-page-1.png), [PDF page 2](evidence/cca004/report-page-2.png).
+
+Raw downloaded reports, ZIPs, browser logs and intermediate captures stay outside version control. Default harness output is ignored `.runtime/cca004-verification/`.
+
+### Sandbox evidence retained separately
+
+No worker code, syscall profile, runtime limits, mounts, privilege or transport configuration was changed. The real **38-check startup qualification and 12 fixed-fixture program runs** in the preceding CCA-003 section remain the sandbox/integration evidence for image `sha256:61c28046ff9e657c00339d5771cfb5fa0f2c8b940778c2587b08518920eb54e9`, tag `contest-check-worker:cca003`. They were **not rerun or counted as new CCA-004 checks**. Browser-to-real-worker execution was not tested as one combined path. Every newly launched production worker still qualifies itself; a mock never qualifies a deployment. Native web/API plus worker-only Compose prerequisites and non-public access are documented in [local setup](../../local-development.md), [judging](../../judging.md) and [worker deployment](../../judge-worker.md).
+
+### Corrected failures and Not run
+
+- Initial lint/format findings were corrected before the final checks.
+- Initial PDF/XLSX checks exposed an Excel footer parser warning and a ZIP finalizer warning on deliberate output overflow. Added the proper center footer prefix and changed the capped sink to discard overflow while allowing clean writer closure, then reject the artifact. Final report checks have no such warnings.
+- The first restricted browser launch failed with `sandbox_host_linux.cc` / shutdown `EPERM`. The authorized local-browser run used existing temporary NSS/NSPR/ASound libraries. No judge restriction was weakened.
+- The first browser upload-replacement check clicked Validate before the widget's upload-change callback completed. The harness now waits for the old error to disappear before validating the new upload; the subsequent complete run passed.
+- Initial screenshots showed only the bottom of Streamlit's internal scroll container. The harness now scrolls the real view to the relevant sections before capturing; no page contents or styles were fabricated.
+- An optional ad hoc YAML-parser check failed with `ModuleNotFoundError: No module named 'yaml'`. No dependency was added solely for that check; the small workflow was manually reviewed. This is not automated YAML validation or hosted-CI evidence.
+- uv normalized an upstream invalid `>=3.6,` package specifier to `>=3.6` during resolution; installation and final locked offline sync completed.
+
+Final diff/artifact review: `git -c core.whitespace=cr-at-eol diff --check` exited **0** after removing an extra documentation EOF blank line. A Python standard-library audit of all **36 changed/new files** found **0 errors**: six new source files have the exact SPDX headers, **100 local Markdown links** resolve, six PNG hashes/nine implementation hashes/two downloaded report hashes and sizes match the evidence, and no generated runtime directories or credential-pattern matches were found. At the end of implementation review the Git index was empty and no commit had been made. Before the subsequently approved commit, all nine implementation hashes and six evidence hashes matched again, all 36 files passed the artifact/credential-pattern/whitespace check, and the staged diff was reviewed separately.
+
+**Not run:** hosted GitHub CI; an Excel/LibreOffice GUI (independent openpyxl parsing was run); browser-to-real-NsJail judging as a combined path; new Docker builds or sandbox runs in this story; unknown contestant programs/malware; live Ollama/OpenRouter or other Release 0.2 workflows; public deployment/image publication; other kernels/architectures/Windows-native execution; host/API crash recovery or persistent queues; independent security/exploit audit. Existing synchronous-batch overhead, unavailable CPU/memory measurements, reserved MLE and abrupt-crash cleanup limits remain documented. These local results establish the recorded behavior, not universal safety.

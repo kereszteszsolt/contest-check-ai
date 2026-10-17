@@ -2,7 +2,7 @@
 
 ## Current repository status
 
-**CCA-001, CCA-002 and CCA-003 implemented.** Local upload validation, a separately qualified offline NsJail worker and deterministic typed batch verdicts now exist. The local API can judge only with both explicit operator settings; every test worker must qualify in its own process. Real Docker/WSL2 integration passed. The Streamlit Run button remains disabled until CCA-004. Release 0.1 is **In progress**; results UI and PDF/XLSX reports remain unimplemented. Release 0.2 and LangGraph are **Planned**. Implement one approved `CCA-*` story at a time; do not mark features complete from documentation alone.
+**Release 0.1 / CCA-001–004 implemented and locally verified.** Streamlit supports upload, validation, judging, per-test results and PDF/XLSX downloads through the local API. The API can judge only with both explicit operator settings; every separate offline worker must qualify in its own process. Existing Docker/WSL2 sandbox evidence and CCA-004 mocked-worker browser/report checks are distinct. CI runs safe mocked tests only; hosted CI/public deployment are not claimed verified. Release 0.2 and LangGraph remain **Planned**. Implement one approved `CCA-*` story at a time; do not mark features complete from documentation alone.
 
 ## Target scope and boundaries
 
@@ -47,4 +47,4 @@ For Python/shell use `#`, for JS/TS use `//`, for HTML use `<!-- ... -->`, etc. 
 
 ## Baseline and implementation boundary
 
-`docs/repository-baseline.md` distinguishes the original baseline from CCA-001/002/003. README diagrams describe the target system. `.env` is not loaded automatically; an environment flag never bypasses worker qualification. Local setup is in `docs/local-development.md`, deployment in `docs/judge-worker.md`, and the batch/API/comparison/policy contract in `docs/judging.md`. Consult the active release verification record for actual evidence and limitations.
+`docs/repository-baseline.md` distinguishes the original baseline from CCA-001–004. README diagrams include the planned AI system. `.env` is not loaded automatically; an environment flag never bypasses worker qualification. Local setup is in `docs/local-development.md`, deployment in `docs/judge-worker.md`, batch/policy in `docs/judging.md`, and UI/export contracts in `docs/verdicts-and-reporting.md`. Consult the active release verification record for actual evidence and limitations.
