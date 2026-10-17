@@ -1,0 +1,16 @@
+**
+!LICENSE
+!deploy/
+!deploy/worker/
+!deploy/worker/Dockerfile
+!deploy/worker/build_runtime.py
+!deploy/worker/bootstrap.py
+!deploy/worker/entrypoint.py
+!deploy/worker/python.policy
+!deploy/worker/requirements.txt
+!src/
+!src/contest_check/
+!src/contest_check/__init__.py
+!src/contest_check/models.py
+!src/contest_check/judge/
+!src/contest_check/judge/*.py

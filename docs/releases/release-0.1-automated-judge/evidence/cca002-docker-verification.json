@@ -1,0 +1,315 @@
+{
+  "qualification": {
+    "default_profile": {
+      "backend": "nsjail-3.5",
+      "execution_ready": false,
+      "checks": [
+        {
+          "name": "linux_x86_64",
+          "passed": true
+        },
+        {
+          "name": "non_root_worker",
+          "passed": true
+        },
+        {
+          "name": "no_capabilities",
+          "passed": true
+        },
+        {
+          "name": "no_new_privileges",
+          "passed": true
+        },
+        {
+          "name": "outer_seccomp",
+          "passed": true
+        },
+        {
+          "name": "no_unexpected_environment",
+          "passed": true
+        },
+        {
+          "name": "offline_worker",
+          "passed": true
+        },
+        {
+          "name": "no_docker_socket_or_secrets",
+          "passed": true
+        },
+        {
+          "name": "read_only_root",
+          "passed": true
+        },
+        {
+          "name": "no_extra_mounts",
+          "passed": true
+        },
+        {
+          "name": "private_bounded_tmpfs",
+          "passed": true
+        },
+        {
+          "name": "memory_and_swap_cap",
+          "passed": true
+        },
+        {
+          "name": "process_cap",
+          "passed": true
+        },
+        {
+          "name": "cpu_cap",
+          "passed": true
+        },
+        {
+          "name": "single_worker",
+          "passed": true
+        },
+        {
+          "name": "pinned_runtime_integrity",
+          "passed": true
+        },
+        {
+          "name": "jail_namespaces_privileges_limits",
+          "passed": false
+        }
+      ]
+    },
+    "reviewed_profile": {
+      "backend": "nsjail-3.5",
+      "execution_ready": true,
+      "checks": [
+        {
+          "name": "linux_x86_64",
+          "passed": true
+        },
+        {
+          "name": "non_root_worker",
+          "passed": true
+        },
+        {
+          "name": "no_capabilities",
+          "passed": true
+        },
+        {
+          "name": "no_new_privileges",
+          "passed": true
+        },
+        {
+          "name": "outer_seccomp",
+          "passed": true
+        },
+        {
+          "name": "no_unexpected_environment",
+          "passed": true
+        },
+        {
+          "name": "offline_worker",
+          "passed": true
+        },
+        {
+          "name": "no_docker_socket_or_secrets",
+          "passed": true
+        },
+        {
+          "name": "read_only_root",
+          "passed": true
+        },
+        {
+          "name": "no_extra_mounts",
+          "passed": true
+        },
+        {
+          "name": "private_bounded_tmpfs",
+          "passed": true
+        },
+        {
+          "name": "memory_and_swap_cap",
+          "passed": true
+        },
+        {
+          "name": "process_cap",
+          "passed": true
+        },
+        {
+          "name": "cpu_cap",
+          "passed": true
+        },
+        {
+          "name": "single_worker",
+          "passed": true
+        },
+        {
+          "name": "pinned_runtime_integrity",
+          "passed": true
+        },
+        {
+          "name": "jail_namespaces_privileges_limits",
+          "passed": true
+        },
+        {
+          "name": "filesystem_allowlist",
+          "passed": true
+        },
+        {
+          "name": "network_syscall_denied",
+          "passed": true
+        },
+        {
+          "name": "unix_socket_denied",
+          "passed": true
+        },
+        {
+          "name": "netlink_socket_denied",
+          "passed": true
+        },
+        {
+          "name": "dns_denied",
+          "passed": true
+        },
+        {
+          "name": "fork_denied",
+          "passed": true
+        },
+        {
+          "name": "namespace_change_denied",
+          "passed": true
+        },
+        {
+          "name": "symlink_denied",
+          "passed": true
+        },
+        {
+          "name": "ptrace_denied",
+          "passed": true
+        },
+        {
+          "name": "memory_limit",
+          "passed": true
+        },
+        {
+          "name": "output_limit",
+          "passed": true
+        },
+        {
+          "name": "wall_timeout",
+          "passed": true
+        },
+        {
+          "name": "runtime_crash",
+          "passed": true
+        },
+        {
+          "name": "sibling_import",
+          "passed": true
+        },
+        {
+          "name": "fd_limit",
+          "passed": true
+        },
+        {
+          "name": "cpu_limit",
+          "passed": true
+        },
+        {
+          "name": "workspace_cleanup",
+          "passed": true
+        },
+        {
+          "name": "runtime_unchanged",
+          "passed": true
+        }
+      ]
+    }
+  },
+  "runtime_cases": {
+    "file_io_and_sibling_module": {
+      "status": "success",
+      "diagnostic": "completed",
+      "elapsed_seconds": 0.21464039300190052,
+      "exit_code": 0,
+      "signal": null,
+      "output_base64": "Mwo=",
+      "output_size_bytes": 2
+    },
+    "crash_private_diagnostic": {
+      "status": "crash",
+      "diagnostic": "program_exit",
+      "elapsed_seconds": 0.21478023700183257,
+      "exit_code": 1,
+      "signal": null,
+      "output_base64": null,
+      "output_size_bytes": 0
+    },
+    "wall_limit": {
+      "status": "timeout",
+      "diagnostic": "wall_limit",
+      "elapsed_seconds": 0.5079948990023695,
+      "exit_code": null,
+      "signal": null,
+      "output_base64": null,
+      "output_size_bytes": 0
+    },
+    "output_limit": {
+      "status": "resource",
+      "diagnostic": "output_or_exit",
+      "elapsed_seconds": 0.1645585160003975,
+      "exit_code": 71,
+      "signal": null,
+      "output_base64": null,
+      "output_size_bytes": 4096
+    },
+    "memory_limit": {
+      "status": "resource",
+      "diagnostic": "memory_or_exit",
+      "elapsed_seconds": 0.3151555209988146,
+      "exit_code": 70,
+      "signal": null,
+      "output_base64": null,
+      "output_size_bytes": 0
+    },
+    "network_denied": {
+      "status": "crash",
+      "diagnostic": "program_exit",
+      "elapsed_seconds": 0.2649400330046774,
+      "exit_code": 159,
+      "signal": 31,
+      "output_base64": null,
+      "output_size_bytes": 0
+    }
+  },
+  "container": {
+    "image_id": "sha256:b8c8359a54ee49ace54330494e9c1db254f0de79305f75afdd39c459ef8627e1",
+    "network_mode": "none",
+    "read_only": true,
+    "cap_drop": [
+      "ALL"
+    ],
+    "memory_bytes": 402653184,
+    "swap_total_bytes": 402653184,
+    "nano_cpus": 1000000000,
+    "pids_limit": 16,
+    "host_binds": [],
+    "published_ports": {}
+  },
+  "recorded_date": "2026-10-17",
+  "environment": {
+    "kernel": "6.6.87.2-microsoft-standard-WSL2",
+    "architecture": "x86_64",
+    "docker_engine": "29.6.1",
+    "docker_desktop": "4.82.0 (233772)",
+    "cgroup_version": 2,
+    "python": "3.12.13"
+  },
+  "source_pins": {
+    "nsjail": "402e2b4c13c79731c632c2add4c3884dd1afc25f",
+    "kafel": "b4241da9f3d17e786387280fc6e4965634fdf45b",
+    "python_image_digest": "sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2"
+  },
+  "configuration_sha256": {
+    "deploy/worker/compose.yaml": "74d40aff2f9a69a6962e5f1e56e90fbf4e78de28c2aefc678182131d0600bd6c",
+    "deploy/worker/compose.reviewed.yaml": "3d8e24c17c4791352c0580102fecd5ab59197a398ced79a48d236147dc20b89a",
+    "deploy/worker/docker-seccomp.json": "85521fd6e47389016f9bc3c2beb1671ed287048fe0b46a5a3c8e4e0891a106ed",
+    "deploy/worker/python.policy": "5b708e8e1b07ddf2fdec5a26a75fa1d574e3c315bac3b9f056bb3f5b4b3ddcc2",
+    "deploy/worker/bootstrap.py": "5b9316a1b2b19591b0c8393573cb304478389094e452981fbe913fba8f0a7056"
+  }
+}

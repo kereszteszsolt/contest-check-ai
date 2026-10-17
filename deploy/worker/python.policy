@@ -1,0 +1,18 @@
+POLICY python_runtime {
+  ALLOW {
+    read, write, readv, writev, pread64, pwrite64, close,
+    openat, access, faccessat, faccessat2, newstat, newlstat, newfstat, newfstatat, statx,
+    statfs, fstatfs,
+    readlink, readlinkat, getdents64, getcwd, lseek, fcntl, ioctl,
+    mmap, mprotect, munmap, mremap, brk, madvise, arch_prctl,
+    rt_sigaction, rt_sigprocmask, rt_sigreturn, sigaltstack, restart_syscall,
+    futex, rseq, set_tid_address, set_robust_list,
+    clock_gettime, clock_getres, clock_nanosleep, nanosleep, gettimeofday, time,
+    getrandom, newuname, sysinfo, getpid, getppid, gettid,
+    getuid, geteuid, getgid, getegid, getgroups, getresuid, getresgid,
+    getrlimit, setrlimit, prlimit64, getrusage, times, sched_getaffinity, sched_yield,
+    chdir, fchdir, umask, ftruncate, fsync, fdatasync,
+    execve, execveat, exit, exit_group
+  }
+}
+USE python_runtime DEFAULT KILL
