@@ -6,6 +6,7 @@ import os
 import httpx
 import streamlit as st
 
+from contest_check.authoring_ui import show_authoring
 from contest_check.models import UploadError, ValidationSummary
 from contest_check.presentation import (
     DQ_COLUMNS,
@@ -235,6 +236,10 @@ def main() -> None:
     st.set_page_config(page_title="ContestCheck AI", page_icon="📦", layout="wide")
     st.title("ContestCheck AI")
     st.caption("Check anonymous Python submissions against private file-based tests.")
+    workspace = st.sidebar.radio("Workspace", ["Judge submissions", "AI task draft"])
+    if workspace == "AI task draft":
+        show_authoring(local_api_url())
+        return
     st.session_state.setdefault("validation_status", "idle")
     st.session_state.setdefault("judge_status", "idle")
     st.session_state.setdefault("reports", {})

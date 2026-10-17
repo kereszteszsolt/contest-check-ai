@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-CCA-001–004 implement Release 0.1. Run `uv run --frozen pytest -q`, `uv run --frozen ruff check .` and `uv run --frozen ruff format --check .` after locked development setup. Default tests use inert archives and mocked workers; they do not execute contestant programs. [Release evidence](releases/release-0.1-automated-judge/verification.md) separates unit/API/AppTest, real mocked-worker browser/download checks and the earlier real host-specific NsJail checks. [UI/report verification](verdicts-and-reporting.md#safe-verification-and-offline-mode) describes the optional browser harness. Hosted CI has not yet run. Release 0.2 checks below remain planned.
+CCA-001–004 implement Release 0.1. Run `uv run --frozen pytest -q`, `uv run --frozen ruff check .` and `uv run --frozen ruff format --check .` after locked development setup. Default tests use inert archives and mocked workers/providers; they do not execute contestant/generated programs or call live models. [Release 0.1 evidence](releases/release-0.1-automated-judge/verification.md) separates unit/API/AppTest, real mocked-worker browser/download checks and the earlier real host-specific NsJail checks. [UI/report verification](verdicts-and-reporting.md#safe-verification-and-offline-mode) describes the optional browser harness. Hosted CI has not yet run. CCA-005 adds mocked LangChain/SDK, Pydantic, API and provider-selection AppTest checks; [Release 0.2 evidence](releases/release-0.2-ai-challenge-authoring/verification.md) records them. Subsequent Release 0.2 checks below remain planned.
 
 ## Release 0.1
 

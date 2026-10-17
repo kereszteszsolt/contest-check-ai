@@ -50,7 +50,11 @@ uv run --frozen ruff format --check .
 
 The default tests use inert in-memory archives and mocked workers. API checks use in-process TestClient; Streamlit AppTest checks validation/judging/results/export/error states with mocked HTTP responses. Report tests inspect independently parsed PDF/XLSX files, deterministic output, formulas/links, limits and the maximum 10,000 test rows. These unit checks are distinct from actual browser and sandbox evidence. The optional [offline browser harness](verdicts-and-reporting.md#safe-verification-and-offline-mode) runs real local services with a fixed mocked worker. Restricted agent environments may require permission for TestClient's cross-thread event-loop sockets.
 
-## Docker layout
+## Optional AI model adapters — CCA-005
+
+Configure provider settings on the API process only, then choose **AI task draft** in the Streamlit Workspace sidebar. The judge screen does not invoke models. No model is selected by default; Generate draft performs one bounded provider call and displays an unverified draft. Provider credentials are never entered in the UI or sent to workers. Missing cloud credentials disable cloud choices. The application does not load `.env`, fetch model lists, download models, switch providers or retry automatically. Follow [model configuration](model-configuration.md) for exact slots, endpoints, limits, API/error contracts and mocked verification. LangGraph, generated-source judging, teacher approval and package export remain planned.
+
+## Docker layout (worker only)
 
 CCA-002 adds a separately deployed worker and scoped Docker files under `deploy/worker/`; see [the worker guide](judge-worker.md). Only the worker is a Compose service. Streamlit/API run natively with the commands above; no web/API containers or daemon-socket mounts are supplied. The service boundaries are:
 

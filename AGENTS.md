@@ -2,7 +2,7 @@
 
 ## Current repository status
 
-**Release 0.1 / CCA-001–004 implemented and locally verified.** Streamlit supports upload, validation, judging, per-test results and PDF/XLSX downloads through the local API. The API can judge only with both explicit operator settings; every separate offline worker must qualify in its own process. Existing Docker/WSL2 sandbox evidence and CCA-004 mocked-worker browser/report checks are distinct. CI runs safe mocked tests only; hosted CI/public deployment are not claimed verified. Release 0.2 and LangGraph remain **Planned**. Implement one approved `CCA-*` story at a time; do not mark features complete from documentation alone.
+**Release 0.1 / CCA-001–004 implemented and locally verified.** Streamlit supports upload, validation, judging, per-test results and PDF/XLSX downloads through the local API. The API can judge only with both explicit operator settings; every separate offline worker must qualify in its own process. Existing Docker/WSL2 sandbox evidence and CCA-004 mocked-worker browser/report checks are distinct. **Release 0.2 is in progress: CCA-005 model configuration/adapters and an unverified draft preview are implemented with mocked SDK/API/UI evidence. No live model is verified.** LangGraph, reference checks, packages and teacher approval remain **Planned**. CI runs safe mocked tests only; hosted CI/public deployment are not claimed verified. Implement one approved `CCA-*` story at a time; do not mark features complete from documentation alone.
 
 ## Target scope and boundaries
 

@@ -1,6 +1,6 @@
 # Release 0.2 — AI Challenge Authoring
 
-**Status: Planned.** Depends on a verified, fail-closed Python judge from Release 0.1.
+**Status: In progress — CCA-005 implemented and locally verified with mocked providers.** Backend-only model allowlists, bounded LangChain adapters, strict task drafts and an explicit provider-selection/draft-preview UI exist. No live model has been verified. CCA-006–008 (LangGraph, sandbox-backed reference checks, packages and teacher approval) remain planned. Depends on the verified, fail-closed Python judge from Release 0.1.
 
 ## Goal
 
@@ -10,7 +10,7 @@ Given teacher instructions, produce a **reviewable** algorithm challenge draft w
 
 | Story | Goal | Status |
 | --- | --- | --- |
-| [CCA-005](stories/CCA-005-configured-llm-providers.md) | Up to 3+3 configured models and validated outputs | Planned |
+| [CCA-005](stories/CCA-005-configured-llm-providers.md) | Up to 3+3 configured models and validated outputs | Implemented; mocked SDK/API/UI checks passed, live models Not run |
 | [CCA-006](stories/CCA-006-langgraph-generation-and-tools.md) | Bounded LangGraph / sandbox-backed test tools | Planned |
 | [CCA-007](stories/CCA-007-student-teacher-artifact-packages.md) | PDF + examples/starter ZIP, private test ZIP | Planned |
 | [CCA-008](stories/CCA-008-teacher-approval-and-verification.md) | HITL approval, UI, security tests, CI and docs | Planned |

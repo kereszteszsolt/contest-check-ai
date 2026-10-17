@@ -9,7 +9,7 @@
 
 **ContestCheck AI** is a self-hosted **automated Python judge** for teachers, programming competitions and independent practice, with AI-assisted challenge authoring planned. A local teacher can upload an anonymous submissions archive, check solutions against defined file-based tests, inspect per-test outcomes and runtimes, and download PDF/XLSX reports. An optional LangChain/LangGraph authoring workflow will later draft problem statements, examples, starter code and private test cases for teacher approval.
 
-> **Current state: Release 0.1 / CCA-001–004 implemented and locally verified.** Streamlit provides validation, judging, anonymous per-test results and PDF/XLSX downloads. The local API requires explicit operator configuration and a separately qualified offline worker for every test, with a fresh time budget and automatic cleanup. Real Docker/WSL2 sandbox evidence and mocked-worker browser/report checks are recorded separately. **Release 0.2 AI authoring remains planned.** See [local setup](docs/local-development.md), [judging/policy](docs/judging.md), [UI/reports](docs/verdicts-and-reporting.md), [worker boundaries](docs/judge-worker.md), and [actual verification](docs/releases/release-0.1-automated-judge/verification.md). Public deployment and universal safety are not claimed.
+> **Current state: Release 0.1 / CCA-001–004 implemented and locally verified.** Streamlit provides validation, judging, anonymous per-test results and PDF/XLSX downloads. The local API requires explicit operator configuration and a separately qualified offline worker for every test, with a fresh time budget and automatic cleanup. Real Docker/WSL2 sandbox evidence and mocked-worker browser/report checks are recorded separately. **Release 0.2 is in progress: CCA-005 adds configured Ollama/OpenRouter selection, bounded LangChain adapters and unverified draft preview; only mocked providers are verified.** LangGraph, sandbox-backed reference checks, teacher approval and package export remain planned. See [local setup](docs/local-development.md), [models](docs/model-configuration.md), [judging/policy](docs/judging.md), [UI/reports](docs/verdicts-and-reporting.md), [worker boundaries](docs/judge-worker.md), and [Release 0.1 evidence](docs/releases/release-0.1-automated-judge/verification.md). Public deployment and universal safety are not claimed.
 
 ## What will users do?
 
@@ -166,7 +166,7 @@ Open <http://127.0.0.1:8501>. Use `uv run --frozen python scripts/make_demo_arch
 | [Release 0.1 – Automated Judge](docs/releases/release-0.1-automated-judge/README.md) | Four Python judge/reporting stories |
 | [Release 0.2 – AI Challenge Authoring](docs/releases/release-0.2-ai-challenge-authoring/README.md) | Four LangChain/LangGraph authoring stories |
 | [Release 0.1 verification](docs/releases/release-0.1-automated-judge/verification.md) | CCA-001–004 checks, browser/report artifacts and host-specific sandbox evidence |
-| [Release 0.2 verification](docs/releases/release-0.2-ai-challenge-authoring/verification.md) | Currently `Not run` |
+| [Release 0.2 verification](docs/releases/release-0.2-ai-challenge-authoring/verification.md) | CCA-005 mocked provider/API/UI evidence; live model checks `Not run` |
 | [Architecture](docs/architecture.md) | UI, orchestration, worker, agents and diagrams |
 | [Archive contracts](docs/archive-contracts.md) | Task/submission/student/teacher ZIP schemas |
 | [Security and sandbox](docs/security-and-sandbox.md) | Critical execution safeguards and fail-closed gates |
@@ -177,7 +177,7 @@ Open <http://127.0.0.1:8501>. Use `uv run --frozen python scripts/make_demo_arch
 | [Story workflow](docs/story-workflow.md) | Separate implementation/commit approval |
 | [Future ideas](docs/future.md) | Languages, scoring and features not yet committed |
 
-See [AGENTS.md](AGENTS.md) for the repository's mandatory workflow and source-license convention. CCA-001–004 are implemented; Release 0.2 stories require separate implementation approval.
+See [AGENTS.md](AGENTS.md) for the repository's mandatory workflow and source-license convention. CCA-001–005 are implemented; subsequent stories require separate implementation approval.
 
 ## License
 

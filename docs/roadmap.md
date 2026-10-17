@@ -1,6 +1,6 @@
 # Roadmap
 
-The project has **two independently verifiable releases**. Release 0.1 is implemented and locally verified; Release 0.2 remains **Planned**. A story plan is not proof of implementation or user permission to start. The linked verification records define actual evidence and limitations.
+The project has **two independently verifiable releases**. Release 0.1 is implemented and locally verified; Release 0.2 is **in progress** with CCA-005 verified using mocked providers. CCA-006–008 remain planned. A story plan is not proof of implementation or user permission to start. The linked verification records define actual evidence and limitations.
 
 ## Release 0.1 — Automated Python Judge
 
@@ -21,7 +21,7 @@ Objective: create a teacher-reviewed challenge draft from natural-language instr
 
 | Story | Scope | Status |
 | --- | --- | --- |
-| [CCA-005](releases/release-0.2-ai-challenge-authoring/stories/CCA-005-configured-llm-providers.md) | Six allowed model slots, Pydantic and bounded LLM adapter | Planned |
+| [CCA-005](releases/release-0.2-ai-challenge-authoring/stories/CCA-005-configured-llm-providers.md) | Six allowed model slots, Pydantic and bounded LLM adapter | Implemented; mocked provider/API/UI evidence |
 | [CCA-006](releases/release-0.2-ai-challenge-authoring/stories/CCA-006-langgraph-generation-and-tools.md) | LangGraph state, generation tools, reference validation | Planned |
 | [CCA-007](releases/release-0.2-ai-challenge-authoring/stories/CCA-007-student-teacher-artifact-packages.md) | PDF statement, samples/starters, separate private tests | Planned |
 | [CCA-008](releases/release-0.2-ai-challenge-authoring/stories/CCA-008-teacher-approval-and-verification.md) | HITL UX, approval gating, tests, docs and evidence | Planned |

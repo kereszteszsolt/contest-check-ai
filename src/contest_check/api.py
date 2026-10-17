@@ -13,8 +13,16 @@ from starlette.exceptions import HTTPException
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from contest_check.archives import DEFAULT_LIMITS, InvalidUpload, validated_workspace
+from contest_check.authoring_contracts import (
+    MAX_AUTHORING_REQUEST_BYTES,
+    DraftRequest,
+    DraftResponse,
+    ModelCatalog,
+)
 from contest_check.judging import judge_archives
+from contest_check.model_configuration import ModelSettings, ProviderError, load_model_settings
 from contest_check.models import UploadError, ValidationSummary
+from contest_check.providers import GenerationSession
 from contest_check.reports import MAX_REPORT_REQUEST_BYTES, MIME_TYPES, ReportLimit, build_report
 from contest_check.results import BatchResult
 from contest_check.worker_transport import DockerWorker, configured
@@ -22,6 +30,7 @@ from contest_check.worker_transport import DockerWorker, configured
 MAX_REQUEST_BYTES = 2 * DEFAULT_LIMITS.archive_bytes + 65_536
 JUDGE_SLOT = threading.BoundedSemaphore(1)
 REPORT_SLOT = threading.BoundedSemaphore(1)
+AUTHORING_SLOT = threading.BoundedSemaphore(1)
 UPLOAD_BODY = {
     "requestBody": {
         "required": True,
@@ -54,12 +63,15 @@ class BoundedUploadBody:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         report = scope.get("path", "").startswith("/api/reports/")
+        authoring = scope.get("path", "").startswith("/api/authoring/")
         if scope["type"] != "http" or (
-            not report and scope["path"] not in {"/api/validate", "/api/judge"}
+            not (report or authoring) and scope["path"] not in {"/api/validate", "/api/judge"}
         ):
             await self.app(scope, receive, send)
             return
         maximum = MAX_REPORT_REQUEST_BYTES if report else MAX_REQUEST_BYTES
+        if authoring:
+            maximum = MAX_AUTHORING_REQUEST_BYTES
         headers = dict(scope["headers"])
         try:
             length = int(headers.get(b"content-length", b"0"))
@@ -124,6 +136,36 @@ async def request_validation_handler(request: Request, exc: RequestValidationErr
 def health():
     # This is operator configuration, never a saved sandbox qualification.
     return {"status": "ok", "execution_enabled": configured()}
+
+
+def get_model_settings() -> ModelSettings:
+    return load_model_settings()
+
+
+@app.get("/api/authoring/models", response_model=ModelCatalog)
+def authoring_models(
+    response: Response, settings: Annotated[ModelSettings, Depends(get_model_settings)]
+):
+    response.headers["Cache-Control"] = "no-store"
+    return settings.catalog()
+
+
+@app.post("/api/authoring/draft", response_model=DraftResponse)
+async def authoring_draft(
+    request: DraftRequest,
+    response: Response,
+    settings: Annotated[ModelSettings, Depends(get_model_settings)],
+):
+    response.headers["Cache-Control"] = "no-store"
+    if not AUTHORING_SLOT.acquire(blocking=False):
+        return error_response("authoring_busy", "Another draft is being prepared. Try later.", 503)
+    try:
+        session = GenerationSession(settings, request.model_slot)
+        return await session.generate(request.instructions)
+    except ProviderError as error:
+        return error_response(error.code, error.message, error.status)
+    finally:
+        AUTHORING_SLOT.release()
 
 
 def validate_pair(task_zip: bytes, submissions_zip: bytes) -> ValidationSummary:

@@ -1,4 +1,22 @@
-# Dependency license inventory — CCA-001
+# Dependency license inventory
+
+## CCA-005 model adapter additions (2026-10-17)
+
+Existing versions remain unchanged. The following new Linux web/API dependencies were resolved with exact direct pins and a hashed lockfile. Installed distribution metadata and retained license files were inspected; this inventory is not a complete security/legal audit of future bundles.
+
+| New component(s), exact installed version | Package license / retained notices |
+| --- | --- |
+| langchain-core 1.6.12, langchain-ollama 1.1.0, langchain-openrouter 0.2.9, langchain-protocol 0.0.19, langsmith 0.14.11, ollama 0.6.3 | MIT; each installed distribution retains its LICENSE |
+| openrouter 0.10.8, distro 1.9.0, requests-toolbelt 1.0.0, tenacity 9.2.1 | Apache-2.0; installed license texts retained |
+| httpx2 2.13.1, httpcore2 2.13.1, jsonpatch 1.35, jsonpointer 3.2.1, uuid-utils 0.17.1, zstandard 0.25.0 | BSD-3-Clause; jsonpatch/jsonpointer also retain AUTHORS |
+| jsonpath-python 1.1.6, PyYAML 6.0.3, truststore 0.10.5 | MIT |
+| sniffio 1.3.1 | MIT OR Apache-2.0; both notices retained |
+| xxhash 4.0.1 | BSD-2-Clause |
+| orjson 3.13.0 | **MPL-2.0 AND (Apache-2.0 OR MIT)**; LICENSE-MPL-2.0, LICENSE-APACHE and LICENSE-MIT are all retained |
+
+`httpx2-jsfetch==1.0` is an Emscripten-only conditional lock entry; it is not installed or redistributed in this Linux verification environment and its installed notices were not inspected. Browser/WASM deployment is not supported or verified here. The application itself continues to use HTTPX 0.28.1 for guarded provider requests; HTTPX2 is a separate LangSmith transitive dependency. LangSmith tracing is explicitly disabled, not an enabled runtime service.
+
+All new packages are installed from upstream distributions, without vendoring or modification. ContestCheck's own source remains Apache-2.0; third-party notices/terms remain component-specific, including the orjson MPL components. No new image/binary bundle is published; review and preserve corresponding component/source obligations before later redistribution. The separate offline worker image/dependency group is unchanged and receives no model libraries or credentials. See [model configuration](model-configuration.md) and [Release 0.2 evidence](releases/release-0.2-ai-challenge-authoring/verification.md).
 
 ## CCA-004 reporting additions (2026-10-17)
 
