@@ -27,7 +27,9 @@ def main() -> None:
     st.set_page_config(page_title="ContestCheck AI", page_icon="📦", layout="centered")
     st.title("ContestCheck AI")
     st.caption("Validate one task package and anonymous Python submissions.")
-    st.info("Solution execution is disabled. This step checks uploaded archives only.")
+    st.info(
+        "Running solutions is disabled in this screen. This step checks uploaded archives only."
+    )
     st.session_state.setdefault("validation_status", "idle")
     task = st.file_uploader(
         "Teacher task package (.zip)",
@@ -84,5 +86,5 @@ def main() -> None:
     st.button(
         "Run solutions",
         disabled=True,
-        help="Available after sandbox implementation and verification.",
+        help="Running solutions and viewing test results in this screen is not available yet.",
     )

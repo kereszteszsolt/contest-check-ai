@@ -1,0 +1,451 @@
+{
+  "default_qualification": {
+    "backend": "nsjail-3.5",
+    "execution_ready": false,
+    "checks": [
+      {
+        "name": "linux_x86_64",
+        "passed": true
+      },
+      {
+        "name": "non_root_worker",
+        "passed": true
+      },
+      {
+        "name": "no_capabilities",
+        "passed": true
+      },
+      {
+        "name": "no_new_privileges",
+        "passed": true
+      },
+      {
+        "name": "outer_seccomp",
+        "passed": true
+      },
+      {
+        "name": "no_unexpected_environment",
+        "passed": true
+      },
+      {
+        "name": "offline_worker",
+        "passed": true
+      },
+      {
+        "name": "no_docker_socket_or_secrets",
+        "passed": true
+      },
+      {
+        "name": "read_only_root",
+        "passed": true
+      },
+      {
+        "name": "no_extra_mounts",
+        "passed": true
+      },
+      {
+        "name": "private_bounded_tmpfs",
+        "passed": true
+      },
+      {
+        "name": "memory_and_swap_cap",
+        "passed": true
+      },
+      {
+        "name": "process_cap",
+        "passed": true
+      },
+      {
+        "name": "cpu_cap",
+        "passed": true
+      },
+      {
+        "name": "single_worker",
+        "passed": true
+      },
+      {
+        "name": "pinned_runtime_integrity",
+        "passed": true
+      },
+      {
+        "name": "jail_namespaces_privileges_limits",
+        "passed": false
+      }
+    ]
+  },
+  "reviewed_qualification": {
+    "backend": "nsjail-3.5",
+    "execution_ready": true,
+    "checks": [
+      {
+        "name": "linux_x86_64",
+        "passed": true
+      },
+      {
+        "name": "non_root_worker",
+        "passed": true
+      },
+      {
+        "name": "no_capabilities",
+        "passed": true
+      },
+      {
+        "name": "no_new_privileges",
+        "passed": true
+      },
+      {
+        "name": "outer_seccomp",
+        "passed": true
+      },
+      {
+        "name": "no_unexpected_environment",
+        "passed": true
+      },
+      {
+        "name": "offline_worker",
+        "passed": true
+      },
+      {
+        "name": "no_docker_socket_or_secrets",
+        "passed": true
+      },
+      {
+        "name": "read_only_root",
+        "passed": true
+      },
+      {
+        "name": "no_extra_mounts",
+        "passed": true
+      },
+      {
+        "name": "private_bounded_tmpfs",
+        "passed": true
+      },
+      {
+        "name": "memory_and_swap_cap",
+        "passed": true
+      },
+      {
+        "name": "process_cap",
+        "passed": true
+      },
+      {
+        "name": "cpu_cap",
+        "passed": true
+      },
+      {
+        "name": "single_worker",
+        "passed": true
+      },
+      {
+        "name": "pinned_runtime_integrity",
+        "passed": true
+      },
+      {
+        "name": "jail_namespaces_privileges_limits",
+        "passed": true
+      },
+      {
+        "name": "empty_output_written",
+        "passed": true
+      },
+      {
+        "name": "untouched_output_missing",
+        "passed": true
+      },
+      {
+        "name": "output_timestamp_reset_denied",
+        "passed": true
+      },
+      {
+        "name": "filesystem_allowlist",
+        "passed": true
+      },
+      {
+        "name": "network_syscall_denied",
+        "passed": true
+      },
+      {
+        "name": "unix_socket_denied",
+        "passed": true
+      },
+      {
+        "name": "netlink_socket_denied",
+        "passed": true
+      },
+      {
+        "name": "dns_denied",
+        "passed": true
+      },
+      {
+        "name": "fork_denied",
+        "passed": true
+      },
+      {
+        "name": "namespace_change_denied",
+        "passed": true
+      },
+      {
+        "name": "symlink_denied",
+        "passed": true
+      },
+      {
+        "name": "ptrace_denied",
+        "passed": true
+      },
+      {
+        "name": "memory_limit",
+        "passed": true
+      },
+      {
+        "name": "output_limit",
+        "passed": true
+      },
+      {
+        "name": "wall_timeout",
+        "passed": true
+      },
+      {
+        "name": "runtime_crash",
+        "passed": true
+      },
+      {
+        "name": "sibling_import",
+        "passed": true
+      },
+      {
+        "name": "fd_limit",
+        "passed": true
+      },
+      {
+        "name": "cpu_limit",
+        "passed": true
+      },
+      {
+        "name": "workspace_cleanup",
+        "passed": true
+      },
+      {
+        "name": "runtime_unchanged",
+        "passed": true
+      }
+    ]
+  },
+  "container": {
+    "image_id": "sha256:61c28046ff9e657c00339d5771cfb5fa0f2c8b940778c2587b08518920eb54e9",
+    "image": "contest-check-worker:cca003",
+    "network_mode": "none",
+    "read_only": true,
+    "cap_drop": [
+      "ALL"
+    ],
+    "memory_bytes": 402653184,
+    "swap_total_bytes": 402653184,
+    "pids_limit": 16,
+    "nano_cpus": 1000000000,
+    "host_binds": []
+  },
+  "batch": {
+    "status": "completed",
+    "task_id": "cca003-fixture",
+    "comparison": "exact",
+    "limits": {
+      "time_seconds": 0.5,
+      "memory_mb": 128,
+      "output_bytes": 1024
+    },
+    "tests_per_participant": 3,
+    "participants": [
+      {
+        "participant_id": "1001",
+        "status": "REVIEW",
+        "passed_tests": 3,
+        "failed_tests": 0,
+        "system_errors": 0,
+        "not_run_tests": 0,
+        "tests": [
+          {
+            "test_id": "b",
+            "verdict": "AC",
+            "reason": "output_matched",
+            "wall_seconds": 0.265058853001392,
+            "cpu_seconds": null,
+            "peak_memory_bytes": null
+          },
+          {
+            "test_id": "a",
+            "verdict": "AC",
+            "reason": "output_matched",
+            "wall_seconds": 0.21483569699921645,
+            "cpu_seconds": null,
+            "peak_memory_bytes": null
+          },
+          {
+            "test_id": "empty",
+            "verdict": "AC",
+            "reason": "output_matched",
+            "wall_seconds": 0.26518733899865765,
+            "cpu_seconds": null,
+            "peak_memory_bytes": null
+          }
+        ],
+        "findings": [
+          {
+            "status": "REVIEW",
+            "rule": "review_imports",
+            "reason": "import_requires_review",
+            "observed_bytes": null,
+            "limit_bytes": null,
+            "module": "socket"
+          }
+        ]
+      },
+      {
+        "participant_id": "1002",
+        "status": "completed",
+        "passed_tests": 0,
+        "failed_tests": 3,
+        "system_errors": 0,
+        "not_run_tests": 0,
+        "tests": [
+          {
+            "test_id": "b",
+            "verdict": "WA",
+            "reason": "output_mismatch",
+            "wall_seconds": 0.16459318999841344,
+            "cpu_seconds": null,
+            "peak_memory_bytes": null
+          },
+          {
+            "test_id": "a",
+            "verdict": "WA",
+            "reason": "output_mismatch",
+            "wall_seconds": 0.214803392002068,
+            "cpu_seconds": null,
+            "peak_memory_bytes": null
+          },
+          {
+            "test_id": "empty",
+            "verdict": "WA",
+            "reason": "output_mismatch",
+            "wall_seconds": 0.2652503879944561,
+            "cpu_seconds": null,
+            "peak_memory_bytes": null
+          }
+        ],
+        "findings": []
+      },
+      {
+        "participant_id": "1003",
+        "status": "completed",
+        "passed_tests": 0,
+        "failed_tests": 3,
+        "system_errors": 0,
+        "not_run_tests": 0,
+        "tests": [
+          {
+            "test_id": "b",
+            "verdict": "TLE",
+            "reason": "time_limit",
+            "wall_seconds": 0.5685423999966588,
+            "cpu_seconds": null,
+            "peak_memory_bytes": null
+          },
+          {
+            "test_id": "a",
+            "verdict": "TLE",
+            "reason": "time_limit",
+            "wall_seconds": 0.5086365600000136,
+            "cpu_seconds": null,
+            "peak_memory_bytes": null
+          },
+          {
+            "test_id": "empty",
+            "verdict": "TLE",
+            "reason": "time_limit",
+            "wall_seconds": 0.5084772039990639,
+            "cpu_seconds": null,
+            "peak_memory_bytes": null
+          }
+        ],
+        "findings": []
+      },
+      {
+        "participant_id": "1004",
+        "status": "completed",
+        "passed_tests": 0,
+        "failed_tests": 3,
+        "system_errors": 0,
+        "not_run_tests": 0,
+        "tests": [
+          {
+            "test_id": "b",
+            "verdict": "RE",
+            "reason": "missing_output",
+            "wall_seconds": 0.2148570909994305,
+            "cpu_seconds": null,
+            "peak_memory_bytes": null
+          },
+          {
+            "test_id": "a",
+            "verdict": "RE",
+            "reason": "missing_output",
+            "wall_seconds": 0.26519530899531674,
+            "cpu_seconds": null,
+            "peak_memory_bytes": null
+          },
+          {
+            "test_id": "empty",
+            "verdict": "RE",
+            "reason": "missing_output",
+            "wall_seconds": 0.2205301200010581,
+            "cpu_seconds": null,
+            "peak_memory_bytes": null
+          }
+        ],
+        "findings": []
+      },
+      {
+        "participant_id": "1005",
+        "status": "DQ",
+        "passed_tests": 0,
+        "failed_tests": 0,
+        "system_errors": 0,
+        "not_run_tests": 3,
+        "tests": [],
+        "findings": [
+          {
+            "status": "DQ",
+            "rule": "max_source_bytes",
+            "reason": "source_size_exceeded",
+            "observed_bytes": 1025,
+            "limit_bytes": 1024,
+            "module": null
+          }
+        ]
+      }
+    ]
+  },
+  "cleanup": {
+    "workspace_empty": true,
+    "no_new_test_containers": true
+  },
+  "environment": {
+    "ServerVersion": "29.6.1",
+    "KernelVersion": "6.6.87.2-microsoft-standard-WSL2",
+    "OperatingSystem": "Docker Desktop",
+    "Architecture": "x86_64",
+    "CgroupVersion": "2"
+  },
+  "sha256": {
+    "deploy/worker/compose.yaml": "36786c9e9581d4992e6fabc6f694ef8225dee49c70adab1bd669228a0bc0a3e0",
+    "deploy/worker/compose.reviewed.yaml": "3d8e24c17c4791352c0580102fecd5ab59197a398ced79a48d236147dc20b89a",
+    "deploy/worker/docker-seccomp.json": "85521fd6e47389016f9bc3c2beb1671ed287048fe0b46a5a3c8e4e0891a106ed",
+    "deploy/worker/python.policy": "5b708e8e1b07ddf2fdec5a26a75fa1d574e3c315bac3b9f056bb3f5b4b3ddcc2",
+    "deploy/worker/bootstrap.py": "5b9316a1b2b19591b0c8393573cb304478389094e452981fbe913fba8f0a7056",
+    "src/contest_check/judge/backend.py": "74f3d08882124c814c7069c7b194221cb4da9094f950cf45d06d5f4e75f09906",
+    "src/contest_check/worker_transport.py": "0e01cdf5878a8b4c315369413e3bc95fe77aceefa76aac7c5d69799e82b9e974",
+    "src/contest_check/judging.py": "58e581d3fdd9e732202c28df35fafd1f5644f224062c3e61a7b4151a1d3345b2"
+  },
+  "verified": true
+}

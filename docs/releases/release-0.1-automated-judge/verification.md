@@ -1,12 +1,12 @@
 # Release 0.1 verification
 
-**Status: CCA-001/002 locally verified, release incomplete.** Archive validation and a separately qualified offline worker exist. The recorded Docker/WSL2 worker passed sandbox integration; browser/API judging remains disabled until CCA-003. No unknown contestant programs have been run.
+**Status: CCA-001/002/003 locally verified, release incomplete.** Archive validation, separately qualified offline workers and deterministic typed batch results exist. The explicitly configured local API passed fixed-fixture Docker/WSL2 integration. Streamlit judging/results and report exports remain unimplemented. No unknown contestant programs have been run.
 
 | Story | State | Unit / API checks | Sandbox / UI / export checks | Notes |
 | --- | --- | --- | --- | --- |
 | CCA-001 | Implemented | See dated evidence below | UI AppTest + local HTTP startup/upload checks; sandbox/export Not run | Execution hard-disabled; report endpoints are placeholders |
 | CCA-002 | Implemented | Mocked worker/contract tests | Real Docker/NsJail qualification + six benign runtime cases | Host-specific evidence below; no unsafe fallback; web/API execution disabled |
-| CCA-003 | Planned | Not run | Not run | No runner/verdicts implemented |
+| CCA-003 | Implemented | Deterministic mapping/order/policy/transport/API checks | Real API-service-to-NsJail fixed-fixture batch; 38-check startup qualification | Configured local API only; metrics unavailable honestly; no scores; CCA-004 UI/exports Not run |
 | CCA-004 | Planned | Not run | Not run | Only CCA-001 upload UI exists; no results UI, XLSX/PDF exporter or CI |
 
 ## Evidence instructions
@@ -191,3 +191,67 @@ git -c core.whitespace=cr-at-eol diff --check
 Observed results: focused tests **64 passed in 0.66s**; full suite **200 passed, 1 warning in 2.47s**. Ruff checks passed, formatting reported **55 files already formatted**, and whitespace checks exited 0. The existing Starlette deprecation warning remains unchanged. The final focused run followed a test-only refinement to advance a simulated clock independently of how often the backend reads it. The full suite again used approved execution because of the previously documented restricted-environment TestClient issue.
 
 These new cases mock NsJail and time; no fixture program executes on the host. **Not rerun:** Docker build and sandbox integration, because deployed worker source and configuration are unchanged. The earlier actual 0.5-second timeout, termination/reaping and workspace-cleanup evidence above remains applicable; the added sequential and cleanup-failure assertions are unit evidence, not a new live sandbox claim. No commit or push was performed.
+
+## 2026-10-17 — CCA-003 deterministic batches, verdicts and policy
+
+Authorization: the user explicitly requested implementing CCA-003. The earlier explicit approval of the scoped worker-only profile remained applicable: neither the outer Docker syscall profile nor the inner Kafel policy was relaxed or changed. Only fixed benign fixture programs were used. Implementation and verification initially ended without a commit. The user subsequently approved committing CCA-003 after checking that only appropriate project files are included. No push was requested; no other story was implemented.
+
+### Implemented behavior and boundaries
+
+- Validated ZIPs feed a deterministic coordinator: participant IDs stay opaque strings in lexicographic order; tests run in the manifest's declared order. Each test gets a fresh private worker/jail and a fresh manifest time budget. The runtime files and then the test container are removed before proceeding. Expected answers stay coordinator-only; responses contain no uploaded source, private input or actual/expected output.
+- `exact` means identical bytes, including CRLF, BOM and final newline; `tokens` means ordered `bytes.split()` tokens with ASCII whitespace only, without numeric coercion. Extra output is WA. Untouched output is RE/missing-output; deliberately empty/truncated output can be AC. The output's initial epoch mtime and denied timestamp setters distinguish the latter cases; three new real startup probes verify this contract.
+- Official outcomes are typed AC/WA/TLE/RE/SYSTEM_ERROR. MLE is reserved but not emitted because the backend cannot reliably distinguish per-test OOM from a deliberately chosen exit/signal encoding. Memory/output/resource markers produce explicit `*_or_exit` reasons. Only the supervisor's observed wall deadline produces TLE. CPU and peak memory are N/A (`null`); unavailable wall time is also null. Wall time includes jail startup and bounded termination/reaping, excluding Docker startup/qualification. No retries or Big-O claims.
+- Optional teacher policy permits an objective total-source-byte DQ with observed/configured byte evidence. Static configured import indicators produce REVIEW only and never change official test verdicts. Neither invalid uploads nor sandbox failures become DQ. Defaults enable no policy checks; existing manifests remain valid. The generated schema matches the typed manifest.
+- A system/transport/protocol/cleanup failure stops the whole batch and retains prior results with separate passed, failed, system-error and not-run counts. Remaining participants are explicitly not run. No score, ranking, winner, accounts or database exists.
+- `POST /api/judge` uses the same bounded two-ZIP multipart contract as validation and admits one batch per API process. Both explicit operator settings are required; environment flags never bypass worker qualification. The trusted native coordinator uses a fixed local Docker daemon address and fixed offline, non-root, capability-free image command with no shell, image pull, host binds, secrets or public worker port. The coordinator has trusted local Docker administration access; no daemon socket enters a worker. Setup, limits and result contracts are in [judging.md](../../judging.md).
+
+### Environment and exact commands
+
+The same CPython 3.12.13, temporary uv environment and qualified Docker/WSL2 host were used: Docker Engine **29.6.1**, Linux **6.6.87.2-microsoft-standard-WSL2**, x86-64, cgroup v2. Upstream NsJail/Kafel/base-image pins and licenses are unchanged. No Python dependency was added or upgraded; the offline lock check resolved the existing 51 packages. The CCA-003 image tag prevents silently using the old output-presence protocol.
+
+Actual tested image: **`contest-check-worker:cca003`**, **`sha256:61c28046ff9e657c00339d5771cfb5fa0f2c8b940778c2587b08518920eb54e9`**. The checked-in [batch evidence](evidence/cca003-batch-verification.json) records both qualification outcomes, inspected container limits, typed API results, cleanup, host properties and hashes of tested configuration/coordinator files. The earlier CCA-002 artifact remains historical evidence for its own image/configuration.
+
+```bash
+docker --host unix:///var/run/docker.sock version --format '{{.Server.Version}}'
+docker --host unix:///var/run/docker.sock compose -f deploy/worker/compose.yaml build judge-worker > /tmp/cca003-build.log 2>&1
+docker --host unix:///var/run/docker.sock compose -f deploy/worker/compose.yaml -f deploy/worker/compose.reviewed.yaml run --rm --no-deps judge-worker --verify > /tmp/cca003-reviewed-verification.json
+/tmp/cca001-venv/bin/pytest -q tests/test_judging.py tests/test_worker_transport.py tests/test_worker.py
+timeout 60s /tmp/cca001-venv/bin/pytest -q -o faulthandler_timeout=15
+/tmp/cca001-venv/bin/python scripts/verify_judge_batch.py --reviewed-profile > /tmp/cca003-batch-evidence.json
+UV_CACHE_DIR=/tmp/cca001-uv-cache UV_PYTHON_INSTALL_DIR=/tmp/cca001-python uv lock --check --offline
+/tmp/cca001-venv/bin/ruff check .
+/tmp/cca001-venv/bin/ruff format --check .
+git -c core.whitespace=cr-at-eol diff --check
+```
+
+Docker calls and the full TestClient suite used approved tool execution for the same daemon/socket and restricted-environment TestClient reasons documented for CCA-001/002. The new focused tests use mocked executors and trusted pipe helpers; they execute no fixture program on the host and do not call a model or external service.
+
+Final observed results: focused **136 passed in 0.90s**; full suite **278 passed, 1 warning in 3.09s**. Ruff reported **All checks passed** and **62 files already formatted**; whitespace checks exited 0. The only warning remains the existing Starlette HTTPX TestClient deprecation, unsuppressed. The offline lock check passed without a dependency change.
+
+Final diff/artifact review confirmed the exact SPDX headers on all 6 new Python files, 74 valid local documentation links, all 8 recorded evidence hashes matching the current files, and no whitespace defects in new text files. Both syscall policies are byte-for-byte unchanged from the CCA-002 baseline. A final Docker listing found no remaining `cca-judge-*` or `cca003-qualification-*` containers. At the end of implementation review, the Git index was empty and CCA-003 changes were uncommitted. The subsequent commit review checked all 32 changed/new files, found no credential-shaped content or unexpected runtime artifacts, confirmed the example API key is blank, and verified that the evidence contains no uploaded source/input/output fields.
+
+### Actual sandbox and API-service results
+
+The default Docker profile still fails closed: exit 78, `execution_ready: false`, first real jail attestation failed. With the approved profile, the updated worker passed **38/38 real checks**, including the original isolation/limits and new empty-written, untouched and denied timestamp-reset probes. Every requested fixture test qualified again in its own process before execution. Inspected settings retained network `none`, read-only root, no capabilities/host binds/ports, 384 MiB memory/no additional swap, one CPU and 16 outer processes.
+
+The operator-only integration script submitted fixed ZIPs to the **real FastAPI service through in-process TestClient**, using production configuration and the actual local Docker transport. Archive validation, policy evaluation, protocol exchange, all NsJail execution, comparison, counts and cleanup are real; the HTTP socket/server and browser are not exercised. A temporary directory override allows the harness to verify that all upload/job files are gone afterwards. The three test IDs are deliberately ordered `b`, `a`, `empty` to detect sorting mistakes.
+
+| Participant fixture | Observed per-test results | Summary |
+| --- | --- | --- |
+| `1001`, named file I/O and sibling helper, including deliberately empty output | AC, AC, AC | 3 passed; REVIEW for an unreachable static import indicator; official results unchanged |
+| `1002`, wrong file contents | WA, WA, WA | 3 failed |
+| `1003`, sleep with a fresh 0.5-second deadline | TLE, TLE, TLE | 3 failed; measured about 0.508–0.569 seconds including startup/termination; no cumulative deadline |
+| `1004`, no output write | RE, RE, RE / `missing_output` | 3 failed, including the empty-expected test |
+| `1005`, 1,025 source bytes under explicit 1,024-byte policy | No program launched | DQ with observed/allowed byte evidence; 3 not-run tests |
+
+The batch returned `completed`, with no system errors, 12 actual program runs and no new leftover test containers or job-workspace files. Each success fixture also verifies that the new output starts empty. The harness removes its own qualification container in `finally`. These timings are one observed run, not algorithm benchmarks.
+
+Mocked checks additionally cover malformed/oversized/unsupported worker responses, lost Docker access, transport deadline/cleanup/reaping failures, first and later system failures with retained prior results, N/A metrics, schema/policy boundaries, unchanged REVIEW verdicts, archive rejection before execution, source/expected-output privacy, request-size enforcement and batch-slot release. A cleanup exception in the local CLI still attempts daemon-side container removal; an uncertain stop never permits the next test.
+
+### Corrected failures and Not run
+
+- Initial focused collection failed because pytest reserves the fixture name `request`; renamed it before running tests. An instance-level Pydantic metadata warning in a new test was corrected to class-level access. Initial import/line-length/format findings were fixed; final lint and formatting checks pass.
+- The first complete integration harness exited 1 on its positive-fixture verdict assertion. A separate controlled request of that fixture returned RE/crash, SIGSYS 31, about 0.215 seconds: its executable network-module import was incompatible with the existing restrictive runtime. The positive fixture now uses an unreachable static import indicator, proving that a REVIEW flag can coexist with AC. No syscall, mount, network or privilege restriction was weakened. The final full harness exited 0 and its checked-in artifact has `verified: true`.
+- The test harness now retains safe partial result metadata if an assertion fails; it never prints source or private expected outputs. The initial failed run returned no success artifact and was not represented as passing evidence.
+
+**Not run:** unknown contestant programs/malware; browser-driven judging/results; actual HTTP socket/uvicorn judging; PDF/XLSX; model calls; CI sandbox execution; public deployment/image publication; other kernels/architectures/Windows-native execution; host/API crash recovery or a persistent queue; independent exploit audit. Full runtime qualification per one-shot test adds startup overhead; large batches are synchronous. Missing CPU/memory metrics and reserved MLE are explicit limits. The Streamlit screen remains validation-only with its Run button disabled. CCA-004 and Release 0.2 were not implemented. No commit or push was performed during implementation/verification.

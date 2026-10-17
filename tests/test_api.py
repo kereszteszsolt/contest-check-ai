@@ -17,9 +17,9 @@ def client():
         yield value
 
 
-def upload_pair(client, task_zip, submissions_zip):
+def upload_pair(client, task_zip, submissions_zip, path="/api/validate"):
     return client.post(
-        "/api/validate",
+        path,
         files={
             "task_zip": ("task.zip", task_zip, "application/zip"),
             "submissions_zip": ("submissions.zip", submissions_zip, "application/zip"),
@@ -172,3 +172,96 @@ def test_openapi_documents_multipart_fields(client):
         "task_zip",
         "submissions_zip",
     ]
+
+
+@pytest.fixture
+def judge_worker():
+    from contest_check.api import get_worker
+    from contest_check.judge.contracts import RuntimeResult
+
+    calls = []
+
+    class Worker:
+        def execute(self, request):
+            calls.append(request)
+            return RuntimeResult(
+                status="success",
+                diagnostic="completed",
+                exit_code=0,
+                elapsed_seconds=0.1,
+                output_base64="Mwo=",
+                output_size_bytes=2,
+                output_written=True,
+            )
+
+    app.dependency_overrides[get_worker] = Worker
+    try:
+        yield calls
+    finally:
+        app.dependency_overrides.pop(get_worker, None)
+
+
+def test_judging_validates_uploads_and_returns_private_typed_results(
+    client, judge_worker, task_zip, submissions_zip, tmp_path, monkeypatch
+):
+    monkeypatch.setattr("contest_check.archives.tempfile.tempdir", str(tmp_path))
+    response = upload_pair(client, task_zip, submissions_zip, "/api/judge")
+    assert response.status_code == 200
+    result = response.json()
+    assert result["status"] == "completed"
+    assert [p["participant_id"] for p in result["participants"]] == ["1001", "1002"]
+    assert all(p["passed_tests"] == 1 for p in result["participants"])
+    assert len(judge_worker) == 2 and judge_worker[0].test_id == "01"
+    assert "source_files" not in response.text and "output_base64" not in response.text
+    assert result["participants"][0]["tests"][0]["cpu_seconds"] is None
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_judging_rejects_bad_archives_before_worker(client, judge_worker, task_zip):
+    response = upload_pair(client, task_zip, b"invalid", "/api/judge")
+    assert response.status_code == 400 and response.json()["code"] == "invalid_zip"
+    assert judge_worker == []
+
+
+def test_judging_body_is_bounded_before_parsing(client, judge_worker, monkeypatch):
+    monkeypatch.setattr("contest_check.api.MAX_REQUEST_BYTES", 10)
+    response = client.post("/api/judge", content=iter([b"x" * 6, b"x" * 6]))
+    assert response.status_code == 413 and judge_worker == []
+
+
+def test_only_one_batch_is_admitted(client, judge_worker, task_zip, submissions_zip):
+    from contest_check.api import JUDGE_SLOT
+
+    assert JUDGE_SLOT.acquire(blocking=False)
+    try:
+        response = upload_pair(client, task_zip, submissions_zip, "/api/judge")
+        assert response.status_code == 503 and response.json()["code"] == "judge_busy"
+        assert judge_worker == []
+    finally:
+        JUDGE_SLOT.release()
+    assert upload_pair(client, task_zip, submissions_zip, "/api/judge").status_code == 200
+
+
+def test_judge_slot_is_released_after_upload_error(client, judge_worker, task_zip, submissions_zip):
+    assert upload_pair(client, task_zip, b"bad", "/api/judge").status_code == 400
+    assert upload_pair(client, task_zip, submissions_zip, "/api/judge").status_code == 200
+
+
+def test_judging_system_failure_is_explicitly_incomplete(
+    client, judge_worker, task_zip, submissions_zip
+):
+    from contest_check.api import get_worker
+    from contest_check.judge.contracts import RuntimeResult
+
+    class FailedWorker:
+        def execute(self, request):
+            judge_worker.append(request)
+            return RuntimeResult(status="system_error", diagnostic="sandbox_unavailable")
+
+    app.dependency_overrides[get_worker] = FailedWorker
+    response = upload_pair(client, task_zip, submissions_zip, "/api/judge")
+    assert response.status_code == 200 and response.json()["status"] == "incomplete"
+    first, second = response.json()["participants"]
+    assert first["system_errors"] == 1 and first["failed_tests"] == 0
+    assert second["status"] == "not_run" and second["tests"] == []
+    assert len(judge_worker) == 1

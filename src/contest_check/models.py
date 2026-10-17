@@ -20,6 +20,19 @@ class ResourceLimits(ContractModel):
     output_bytes: Annotated[int, Field(ge=1, le=1_048_576)]
 
 
+class ContestPolicy(ContractModel):
+    max_source_bytes: Annotated[int | None, Field(ge=1, le=30 * 1_048_576)] = None
+    review_imports: Annotated[
+        list[Literal["socket", "subprocess", "ctypes"]], Field(max_length=3)
+    ] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def unique_imports(self) -> "ContestPolicy":
+        if len(self.review_imports) != len(set(self.review_imports)):
+            raise ValueError("Review imports must be unique.")
+        return self
+
+
 class TaskManifest(ContractModel):
     task_id: Annotated[str, Field(pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$")]
     language: Literal["python"]
@@ -29,6 +42,7 @@ class TaskManifest(ContractModel):
     tests: Annotated[list[TestSpec], Field(min_length=1, max_length=100)]
     comparison: Literal["exact", "tokens"]
     limits: ResourceLimits
+    policy: ContestPolicy = Field(default_factory=ContestPolicy)
     title: Annotated[str | None, Field(max_length=160)] = None
 
     @model_validator(mode="after")

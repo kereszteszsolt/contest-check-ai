@@ -29,6 +29,7 @@ def manifest():
         "tests": [{"test_id": "01"}],
         "comparison": "exact",
         "limits": {"time_seconds": 1.0, "memory_mb": 128, "output_bytes": 1024},
+        "policy": {"max_source_bytes": None, "review_imports": []},
     }
 
 

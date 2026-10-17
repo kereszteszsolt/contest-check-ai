@@ -144,6 +144,31 @@ class QualifiedWorker:
 
         cases = [
             (
+                "empty_output_written",
+                probe("open('output.txt', 'w').close()"),
+                lambda r: (
+                    r.status == "success"
+                    and r.output_written is True
+                    and r.output_base64 == ""
+                    and r.output_size_bytes == 0
+                ),
+            ),
+            (
+                "untouched_output_missing",
+                probe("pass"),
+                lambda r: (
+                    r.status == "success"
+                    and r.output_written is False
+                    and r.output_base64 == ""
+                    and r.output_size_bytes == 0
+                ),
+            ),
+            (
+                "output_timestamp_reset_denied",
+                probe("import os; os.utime('output.txt', ns=(0, 0))"),
+                lambda r: r.signal == signal.SIGSYS,
+            ),
+            (
                 "filesystem_allowlist",
                 probe(FILESYSTEM),
                 lambda r: (

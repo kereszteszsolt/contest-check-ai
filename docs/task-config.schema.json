@@ -1,5 +1,39 @@
 {
   "$defs": {
+    "ContestPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "max_source_bytes": {
+          "anyOf": [
+            {
+              "maximum": 31457280,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Source Bytes"
+        },
+        "review_imports": {
+          "items": {
+            "enum": [
+              "socket",
+              "subprocess",
+              "ctypes"
+            ],
+            "type": "string"
+          },
+          "maxItems": 3,
+          "title": "Review Imports",
+          "type": "array"
+        }
+      },
+      "title": "ContestPolicy",
+      "type": "object"
+    },
     "ResourceLimits": {
       "additionalProperties": false,
       "properties": {
@@ -92,6 +126,9 @@
     },
     "limits": {
       "$ref": "#/$defs/ResourceLimits"
+    },
+    "policy": {
+      "$ref": "#/$defs/ContestPolicy"
     },
     "title": {
       "anyOf": [

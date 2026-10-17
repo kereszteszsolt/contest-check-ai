@@ -244,6 +244,30 @@ def test_launch_is_fixed_and_output_cleanup_is_bounded(worker_job, mock_executio
     assert list(mock_execution.iterdir()) == []
 
 
+@pytest.mark.parametrize("writes_empty_output", [False, True])
+def test_empty_output_is_distinct_from_no_output(
+    worker_job, mock_execution, monkeypatch, writes_empty_output
+):
+    class FakeProcess:
+        def __init__(self, command, **kwargs):
+            self.output = Path(command[2]).parent / "work/output.txt"
+            assert self.output.stat().st_mtime_ns == 0
+
+        def wait(self, timeout):
+            if writes_empty_output:
+                self.output.write_bytes(b"")
+            return 0
+
+    monkeypatch.setattr(backend.subprocess, "Popen", FakeProcess)
+    result = backend.NsJailBackend().execute(
+        PreparedRun.from_request(WorkerRequest.model_validate(worker_job))
+    )
+    assert result.status == "success" and result.output_base64 == ""
+    assert result.output_size_bytes == 0
+    assert result.output_written is writes_empty_output
+    assert list(mock_execution.iterdir()) == []
+
+
 @pytest.mark.parametrize("case", ["oversized", "symlink", "launch_error"])
 def test_backend_errors_never_return_partial_or_external_output(
     worker_job, mock_execution, monkeypatch, case

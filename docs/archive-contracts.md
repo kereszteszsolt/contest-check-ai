@@ -2,7 +2,7 @@
 
 ## Initial judge inputs
 
-**Teacher task ZIP** contains one challenge with `challenge/task-config.json` and exactly the declared `challenge/tests/<test_id>.in` / `<test_id>.out` pairs. CCA-001 implements validation and temporary extraction only; program execution remains disabled.
+**Teacher task ZIP** contains one challenge with `challenge/task-config.json` and exactly the declared `challenge/tests/<test_id>.in` / `<test_id>.out` pairs. CCA-001 validates/extracts the pair; CCA-003 connects it to a separately qualified worker through an explicitly configured local API. See [judging.md](judging.md).
 
 ### Task manifest v0.1
 
@@ -17,13 +17,15 @@ The strict Pydantic contract is `src/contest_check/models.py`; its generated [JS
 | `output_filename` | Lowercase ASCII basename matching `[a-z][a-z0-9_-]{0,47}\.(out\|txt)`; must differ from input |
 | `tests` | 1–100 objects, each containing only `test_id` |
 | `tests[].test_id` | ASCII letter/digit followed by up to 31 letters/digits/underscores/hyphens; unique ignoring case |
-| `comparison` | `exact` or `tokens`; planned comparison contracts, neither runs in CCA-001 |
+| `comparison` | `exact` (identical bytes) or `tokens` (ordered ASCII-whitespace-separated byte tokens); implemented in CCA-003 |
 | `limits.time_seconds` | Finite number greater than 0 and at most 3 |
 | `limits.memory_mb` | Integer 1–256; booleans rejected |
 | `limits.output_bytes` | Integer 1–1,048,576; also caps each expected `.out` file |
 | `title` | Optional string of at most 160 characters or `null` |
 
-`exact` is intended to compare bytes; `tokens` is intended to compare whitespace-separated tokens. CCA-003 must verify these behaviors before verdicts are available. Runtime filenames are data, never shell command fragments. CCA-001 records limits but does not enforce runtime limits because it never launches a solution.
+`exact` compares identical bytes without newline, whitespace or encoding normalization. `tokens` compares ordered lists from `bytes.split()`, using ASCII whitespace only, with no numeric conversion. The complete tested rules are in [judging.md](judging.md#comparison-rules). Runtime filenames are data, never shell command fragments. The worker enforces manifest resource limits afresh for every test.
+
+The optional `policy` object defaults to `{"max_source_bytes": null, "review_imports": []}`. `max_source_bytes` is an explicitly configured total-source-byte limit (1–30 MiB); exceeding it records objective DQ evidence and skips that participant. `review_imports` accepts at most the three distinct names `socket`, `subprocess`, `ctypes`; static matches generate REVIEW notices without changing test verdicts. See the [policy contract](judging.md#optional-contest-policy). Archive rejection is never a DQ.
 
 **Submissions ZIP:** 1–100 strictly numeric opaque folder IDs, each containing exactly one `main.py` entrypoint and optional same-folder `.py` modules. IDs match `0|[1-9][0-9]{0,15}`; leading-zero aliases, signs, names and Unicode numerals are rejected. Filenames match `[A-Za-z_][A-Za-z0-9_]{0,63}\.py`. Maximum 30 files per participant. Only relative paths are accepted. A multi-task archive is **not** MVP scope.
 

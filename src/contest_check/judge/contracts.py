@@ -79,12 +79,15 @@ class RuntimeResult(ContractModel):
         "sandbox_setup",
         "cleanup_failed",
         "invalid_request",
+        "worker_transport",
+        "worker_protocol",
     ]
-    elapsed_seconds: Annotated[float, Field(ge=0)] = 0.0
+    elapsed_seconds: Annotated[float | None, Field(ge=0, allow_inf_nan=False)] = None
     exit_code: int | None = None
     signal: int | None = None
-    output_base64: str | None = None
-    output_size_bytes: int | None = None
+    output_base64: EncodedFile | None = None
+    output_size_bytes: Annotated[int | None, Field(ge=0, le=MAX_FILE_BYTES)] = None
+    output_written: bool | None = None
 
 
 class SecurityCheck(ContractModel):

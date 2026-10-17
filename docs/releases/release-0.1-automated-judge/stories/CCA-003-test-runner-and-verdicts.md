@@ -2,7 +2,7 @@
 
 ## Status
 
-**Planned**.
+**Implemented and locally verified (2026-10-17).** The configured local API connects validated ZIPs to qualified offline workers and returns typed results. Unit checks and the fixed-fixture Docker/WSL2 integration passed; see [verification.md](../verification.md) and [judging.md](../../../judging.md). Streamlit results and exports remain CCA-004 work.
 
 ## User story
 
@@ -18,13 +18,15 @@ CCA-001 valid input contracts and a successfully verified **CCA-002 sandbox**.
 
 ## Acceptance criteria
 
-- [ ] Tests run in deterministic manifest order, with fresh isolation and expected `.in` and `.out` filenames on every test.
-- [ ] Output matching uses one documented and tested exact/text-normalization rule; unexpected output, missing file and oversized output have clear failure categories.
-- [ ] Each test records `AC`, `WA`, `TLE`, `MLE` (when supportable), `RE` or `SYSTEM_ERROR` and measured runtime; missing metrics are `N/A`, never guessed.
-- [ ] Participant summaries preserve anonymous folder IDs and list passed/failed test counts, with **no score, winner or ranking calculation**.
-- [ ] Clear, objective configured policy violations can be recorded as `DQ` with reason; suspicious heuristic indicators use `REVIEW`, never automatic fraud/plagiarism guilt.
-- [ ] A sandbox/system failure cannot become a student `WA`, `RE` or `DQ`, and the batch either pauses or reports incomplete results honestly.
-- [ ] Mocked deterministic unit tests cover verdict mapping and edge cases; approved sandbox integration fixtures exercise success, wrong answer, timeout and file I/O.
+- [x] Tests run in deterministic manifest order, with fresh isolation and expected `.in` and `.out` filenames on every test.
+- [x] Output matching uses the documented and tested manifest rules (`exact` bytes or ordered `tokens`); unexpected output, missing file and oversized output have clear failure categories.
+- [x] Each test records `AC`, `WA`, `TLE`, `RE` or `SYSTEM_ERROR` and measured wall time. `MLE` is reserved but not emitted without reliable evidence; unavailable wall/CPU/memory metrics are N/A (`null`), never guessed.
+- [x] Participant summaries preserve anonymous folder IDs and list passed/failed test counts, with **no score, winner or ranking calculation**.
+- [x] Clear, objective configured policy violations can be recorded as `DQ` with byte-count evidence; configured static import indicators use `REVIEW` without altering official test verdicts, never automatic fraud/plagiarism guilt.
+- [x] A sandbox/system failure cannot become a student `WA`, `RE` or `DQ`; the batch stops, retains prior results and explicitly counts remaining tests/participants as not run.
+- [x] Mocked deterministic unit tests cover verdict mapping and edge cases; approved sandbox integration fixtures exercise success, wrong answer, timeout, missing/empty output, file I/O and cleanup.
+
+The configured time budget restarts per test. Generated runtime files and the test container are removed before the next test; uncertain cleanup stops the batch. Expected outputs remain coordinator-only.
 
 ## Out of scope
 

@@ -1,7 +1,7 @@
 [project]
 name = "contest-check-ai"
 version = "0.1.0"
-description = "Local task and anonymous submission archive validation; execution disabled"
+description = "Local anonymous Python judging through a separately qualified offline worker"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = "Apache-2.0"

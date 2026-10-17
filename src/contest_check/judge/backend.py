@@ -129,6 +129,9 @@ class NsJailBackend:
                 output = work / job.output_filename
                 with output.open("xb"):
                     pass
+                # Writes and truncation change mtime, including an intentionally
+                # empty output. The jailed policy denies all timestamp setters.
+                os.utime(output, ns=(0, 0))
                 output.chmod(0o600)
                 work.chmod(0o500)
                 config = root / "jail.cfg"
@@ -169,7 +172,12 @@ class NsJailBackend:
                 if not stat.S_ISREG(metadata.st_mode) or metadata.st_size > job.output_bytes:
                     result = RuntimeResult(status="system_error", diagnostic="sandbox_setup")
                 else:
-                    result = result.model_copy(update={"output_size_bytes": metadata.st_size})
+                    result = result.model_copy(
+                        update={
+                            "output_size_bytes": metadata.st_size,
+                            "output_written": metadata.st_mtime_ns != 0,
+                        }
+                    )
                     if result.status == "success":
                         result = result.model_copy(
                             update={"output_base64": base64.b64encode(payload).decode("ascii")}

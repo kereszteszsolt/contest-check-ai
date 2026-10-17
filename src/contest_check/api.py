@@ -1,9 +1,10 @@
 # SPDX-FileCopyrightText: 2026 Keresztes Zsolt <https://kereszteszsolt.hu>
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Literal
+import threading
+from typing import Annotated, Literal
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
@@ -12,9 +13,31 @@ from starlette.exceptions import HTTPException
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from contest_check.archives import DEFAULT_LIMITS, InvalidUpload, validated_workspace
+from contest_check.judging import judge_archives
 from contest_check.models import UploadError, ValidationSummary
+from contest_check.results import BatchResult
+from contest_check.worker_transport import DockerWorker, configured
 
 MAX_REQUEST_BYTES = 2 * DEFAULT_LIMITS.archive_bytes + 65_536
+JUDGE_SLOT = threading.BoundedSemaphore(1)
+UPLOAD_BODY = {
+    "requestBody": {
+        "required": True,
+        "content": {
+            "multipart/form-data": {
+                "schema": {
+                    "type": "object",
+                    "required": ["task_zip", "submissions_zip"],
+                    "additionalProperties": False,
+                    "properties": {
+                        "task_zip": {"type": "string", "format": "binary"},
+                        "submissions_zip": {"type": "string", "format": "binary"},
+                    },
+                }
+            }
+        },
+    }
+}
 
 
 def error_response(code: str, message: str, status: int = 400) -> JSONResponse:
@@ -28,7 +51,7 @@ class BoundedUploadBody:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or scope["path"] != "/api/validate":
+        if scope["type"] != "http" or scope["path"] not in {"/api/validate", "/api/judge"}:
             await self.app(scope, receive, send)
             return
         headers = dict(scope["headers"])
@@ -72,7 +95,7 @@ class BoundedUploadBody:
         await self.app(scope, bounded_receive, send)
 
 
-app = FastAPI(title="ContestCheck AI — archive validation", version="0.1.0")
+app = FastAPI(title="ContestCheck AI — Python judge", version="0.1.0")
 app.add_middleware(BoundedUploadBody)
 
 
@@ -93,7 +116,8 @@ async def request_validation_handler(request: Request, exc: RequestValidationErr
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "execution_enabled": False}
+    # This is operator configuration, never a saved sandbox qualification.
+    return {"status": "ok", "execution_enabled": configured()}
 
 
 def validate_pair(task_zip: bytes, submissions_zip: bytes) -> ValidationSummary:
@@ -106,26 +130,19 @@ def validate_pair(task_zip: bytes, submissions_zip: bytes) -> ValidationSummary:
     "/api/validate",
     response_model=ValidationSummary,
     responses={400: {"model": UploadError}, 413: {"model": UploadError}},
-    openapi_extra={
-        "requestBody": {
-            "required": True,
-            "content": {
-                "multipart/form-data": {
-                    "schema": {
-                        "type": "object",
-                        "required": ["task_zip", "submissions_zip"],
-                        "additionalProperties": False,
-                        "properties": {
-                            "task_zip": {"type": "string", "format": "binary"},
-                            "submissions_zip": {"type": "string", "format": "binary"},
-                        },
-                    }
-                }
-            },
-        }
-    },
+    openapi_extra=UPLOAD_BODY,
 )
 async def validate_upload(request: Request) -> ValidationSummary | JSONResponse:
+    payloads = await read_uploads(request)
+    if isinstance(payloads, JSONResponse):
+        return payloads
+    try:
+        return await run_in_threadpool(validate_pair, *payloads)
+    except OSError:
+        return error_response("workspace", "Temporary validation workspace is unavailable.", 503)
+
+
+async def read_uploads(request: Request) -> list[bytes] | JSONResponse:
     if (
         request.headers.get("content-type", "").split(";")[0].strip().lower()
         != "multipart/form-data"
@@ -147,15 +164,42 @@ async def validate_upload(request: Request) -> ValidationSummary | JSONResponse:
                     "archive_size", "ZIP exceeds the compressed upload size limit.", 413
                 )
             payloads.append(payload)
+    return payloads
+
+
+def get_worker():
+    return DockerWorker() if configured() else None
+
+
+@app.post(
+    "/api/judge",
+    response_model=BatchResult,
+    openapi_extra=UPLOAD_BODY,
+    responses={
+        400: {"model": UploadError},
+        413: {"model": UploadError},
+        503: {"model": UploadError},
+    },
+)
+async def judge_upload(
+    request: Request, worker: Annotated[object, Depends(get_worker)]
+) -> BatchResult | JSONResponse:
+    if worker is None:
+        return error_response("execution_disabled", "Solution execution is not configured.", 503)
+    if not JUDGE_SLOT.acquire(blocking=False):
+        return error_response(
+            "judge_busy", "Another judging batch is running. Try again later.", 503
+        )
     try:
-        return await run_in_threadpool(validate_pair, *payloads)
-    except OSError:
-        return error_response("workspace", "Temporary validation workspace is unavailable.", 503)
-
-
-@app.post("/api/judge", status_code=503, response_model=UploadError)
-def judge_disabled():
-    return UploadError(code="execution_disabled", message="Solution execution is not available.")
+        payloads = await read_uploads(request)
+        if isinstance(payloads, JSONResponse):
+            return payloads
+        try:
+            return await run_in_threadpool(judge_archives, *payloads, worker)
+        except OSError:
+            return error_response("workspace", "Temporary judging workspace is unavailable.", 503)
+    finally:
+        JUDGE_SLOT.release()
 
 
 @app.get("/api/reports/{report_format}", status_code=501, response_model=UploadError)

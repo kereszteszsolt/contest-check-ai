@@ -2,7 +2,7 @@
 
 ## Current repository status
 
-**CCA-001 and CCA-002 implemented.** Local Streamlit/FastAPI upload validation, typed manifests, bounded ZIP ingestion and a separate one-shot NsJail Python worker now exist. The worker must pass real sandbox qualification in its own process before accepting a program; recorded Docker/WSL2 checks passed. Browser/API judging remains disabled until CCA-003. Release 0.1 is **In progress**; verdict orchestration, reports and LangGraph remain unimplemented. Release 0.2 is **Planned**. Implement one approved `CCA-*` story at a time; do not mark features complete from documentation alone.
+**CCA-001, CCA-002 and CCA-003 implemented.** Local upload validation, a separately qualified offline NsJail worker and deterministic typed batch verdicts now exist. The local API can judge only with both explicit operator settings; every test worker must qualify in its own process. Real Docker/WSL2 integration passed. The Streamlit Run button remains disabled until CCA-004. Release 0.1 is **In progress**; results UI and PDF/XLSX reports remain unimplemented. Release 0.2 and LangGraph are **Planned**. Implement one approved `CCA-*` story at a time; do not mark features complete from documentation alone.
 
 ## Target scope and boundaries
 
@@ -47,4 +47,4 @@ For Python/shell use `#`, for JS/TS use `//`, for HTML use `<!-- ... -->`, etc. 
 
 ## Baseline and implementation boundary
 
-`docs/repository-baseline.md` distinguishes the original baseline from CCA-001/002. README diagrams describe the target system. `.env.example` cannot enable execution. Local validation setup is in `docs/local-development.md`; worker deployment, host requirements and qualification are in `docs/judge-worker.md`. Consult the active release verification record for actual evidence and limitations.
+`docs/repository-baseline.md` distinguishes the original baseline from CCA-001/002/003. README diagrams describe the target system. `.env` is not loaded automatically; an environment flag never bypasses worker qualification. Local setup is in `docs/local-development.md`, deployment in `docs/judge-worker.md`, and the batch/API/comparison/policy contract in `docs/judging.md`. Consult the active release verification record for actual evidence and limitations.

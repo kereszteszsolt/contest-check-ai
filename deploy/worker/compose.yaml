@@ -3,7 +3,7 @@ services:
     build:
       context: ../..
       dockerfile: deploy/worker/Dockerfile
-    image: contest-check-worker:cca002
+    image: contest-check-worker:cca003
     network_mode: none
     read_only: true
     user: "1000:1000"
