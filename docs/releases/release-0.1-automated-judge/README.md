@@ -1,6 +1,6 @@
 # Release 0.1 — Automated Python Judge
 
-**Status: In progress.** CCA-001 provides a locally runnable Streamlit/FastAPI archive-validation foundation with tests. Execution is hard-disabled. Worker/sandbox, verdicts, reports and container deployment remain planned.
+**Status: In progress.** CCA-001 provides local Streamlit/FastAPI archive validation; CCA-002 adds a separate NsJail worker verified on the recorded Docker/WSL2 environment. Browser/API judging remains disabled. Per-test orchestration/verdicts, reports and web/API deployment remain planned.
 
 ## Goal
 
@@ -15,7 +15,7 @@ The sandbox and archive validation are release-blocking requirements. If they ca
 | Story | Goal | Status |
 | --- | --- | --- |
 | [CCA-001](stories/CCA-001-foundation-and-safe-archive-ingestion.md) | UI/API foundation + safe archive contract | Implemented; see verification evidence |
-| [CCA-002](stories/CCA-002-isolated-python-judge-worker.md) | Verified offline Python worker / resource limits | Planned |
+| [CCA-002](stories/CCA-002-isolated-python-judge-worker.md) | Verified offline Python worker / resource limits | Implemented; host-specific sandbox evidence recorded |
 | [CCA-003](stories/CCA-003-test-runner-and-verdicts.md) | Per-test verdicts, timings, policy handling | Planned |
 | [CCA-004](stories/CCA-004-ui-reports-and-verification.md) | Streamlit UI, PDF/XLSX, tests, CI and docs | Planned |
 

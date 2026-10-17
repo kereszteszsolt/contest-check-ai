@@ -50,14 +50,14 @@ uv run --frozen ruff format --check .
 
 The tests use inert in-memory archives. API checks use Starlette's in-process TestClient; Streamlit AppTest checks startup and validation/error states with mocked uploads and HTTP responses. Neither constitutes browser-driven upload evidence or sandbox verification. Restricted agent environments may require permission for Python's cross-thread event-loop sockets even for TestClient.
 
-## Docker layout — design only
+## Docker layout
 
-CCA-001 intentionally supplies no Dockerfile, Compose service or runnable worker. A later container layout should keep these boundaries:
+CCA-002 adds a separately deployed worker and scoped Docker files under `deploy/worker/`; see [the worker guide](judge-worker.md). Web/API containerization and browser-triggered judging remain future work. The service boundaries are:
 
 | Service | Responsibility and permitted access |
 | --- | --- |
 | `web` | Streamlit presentation; connects only to the internal API; no worker executable or model credentials |
 | `api` | Archive validation and coordination; bounded private temporary filesystem; no contestant execution |
-| `judge-worker` | Future separately verified Linux sandbox worker; no internet, secrets, Docker socket, or unrelated application/system files; narrow isolated input/output only |
+| `judge-worker` | Implemented one-shot worker with mandatory real NsJail qualification; no internet, secrets, Docker socket or unrelated application files; explicit isolated runtime/input/output only |
 
-Use separate writable temporary filesystems with quotas, unprivileged users and no shared upload root with the web process. Bind local ports to loopback. A dedicated temp filesystem also discards artifacts on container teardown. A plain container does not establish safe execution: CCA-002 must prove isolation and negative tests on the real host before any worker is enabled. There is no `docker compose up` command for this story.
+The worker uses a private bounded tmpfs, non-root user, read-only root, no network and no shared upload root with the web process. Every process qualifies the actual jail before accepting a program; the recorded host passed the isolation/negative checks. A plain container is never an execution fallback. Worker build/check/run commands are in its guide; the local web/API setup above remains validation-only.

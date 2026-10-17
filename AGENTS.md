@@ -2,7 +2,7 @@
 
 ## Current repository status
 
-**CCA-001 foundation implemented.** A local Streamlit app, FastAPI upload validation, strict task schema, safe bounded ZIP ingestion and focused tests now exist. Release 0.1 is **In progress**; the judge, LangGraph workflow, reports and Docker Compose services remain unimplemented. Release 0.2 is **Planned**. Implement one approved `CCA-*` story at a time; do not mark features complete from documentation alone.
+**CCA-001 and CCA-002 implemented.** Local Streamlit/FastAPI upload validation, typed manifests, bounded ZIP ingestion and a separate one-shot NsJail Python worker now exist. The worker must pass real sandbox qualification in its own process before accepting a program; recorded Docker/WSL2 checks passed. Browser/API judging remains disabled until CCA-003. Release 0.1 is **In progress**; verdict orchestration, reports and LangGraph remain unimplemented. Release 0.2 is **Planned**. Implement one approved `CCA-*` story at a time; do not mark features complete from documentation alone.
 
 ## Target scope and boundaries
 
@@ -47,4 +47,4 @@ For Python/shell use `#`, for JS/TS use `//`, for HTML use `<!-- ... -->`, etc. 
 
 ## Baseline and implementation boundary
 
-`docs/repository-baseline.md` distinguishes the original documentation baseline from the CCA-001 foundation. README diagrams describe the target system; `.env.example` remains planned configuration and cannot enable execution. Actual setup and verification are documented in `docs/local-development.md` and the active release verification record.
+`docs/repository-baseline.md` distinguishes the original baseline from CCA-001/002. README diagrams describe the target system. `.env.example` cannot enable execution. Local validation setup is in `docs/local-development.md`; worker deployment, host requirements and qualification are in `docs/judge-worker.md`. Consult the active release verification record for actual evidence and limitations.

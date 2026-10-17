@@ -12,11 +12,11 @@
 6. Prevent injection through filenames, tool arguments, file paths, logs, generated HTML, PDF metadata and XLSX formula cells.
 7. Keep audit-friendly failure categories: invalid upload, proven policy violation, compiler/runtime error, time/memory limit, system failure and **suspected abuse needing human review**.
 
-## Candidate sandbox
+## Selected CCA-002 sandbox
 
-[Google NsJail](https://github.com/google/nsjail) is a candidate for Linux process isolation (namespaces, seccomp-BPF, resource limits). Its suitability for the chosen Docker/host environment **must be verified**, along with its current license and transitive components, before CCA-002 is accepted. `isolate` is another technical option but has a different upstream license; never bundle a third-party binary without reviewing distribution terms.
+[Google NsJail 3.5](https://github.com/google/nsjail/tree/402e2b4c13c79731c632c2add4c3884dd1afc25f), with its pinned Kafel submodule, is the selected CCA-002 backend. Both use Apache-2.0. The separate worker builds exact upstream source commits; its native dependencies retain their own licenses. Deployment/host requirements, the scoped outer Docker profile, inner default-kill policy, resource caps and qualification are detailed in [judge-worker.md](judge-worker.md). The recorded Docker Desktop/WSL2 environment passed real checks; this does not qualify a different host automatically.
 
-No vendored sandbox code is included in this baseline. If a robust sandbox cannot run in the target environment, the implementation must stop execution and clearly document the blocker. Do not request elevated privileges or mount the Docker socket just to make the judge work without explicit security review.
+No sandbox binary is vendored in the repository. If the pinned sandbox cannot qualify on a target environment, the worker refuses execution and returns structured system-error metadata. The default Docker profile failed closed on the recorded host; a worker-only profile was explicitly reviewed/approved for the actual integration tests. There is no privileged, unconfined, host-subprocess or plain-container fallback. The web/API judge route remains disabled until CCA-003.
 
 ## Security verification plan
 

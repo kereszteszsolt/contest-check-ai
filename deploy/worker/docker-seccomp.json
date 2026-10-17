@@ -1,0 +1,63 @@
+{
+  "defaultAction": "SCMP_ACT_ERRNO",
+  "defaultErrnoRet": 1,
+  "archMap": [{"architecture": "SCMP_ARCH_X86_64", "subArchitectures": []}],
+  "syscalls": [
+    {
+      "names": [
+        "read", "write", "readv", "writev", "pread64", "pwrite64", "close", "close_range",
+        "openat", "access", "faccessat", "faccessat2", "stat", "lstat", "fstat", "newfstatat",
+        "statx", "statfs", "fstatfs", "readlink", "readlinkat", "getdents64", "getcwd",
+        "lseek", "fcntl", "ioctl", "dup", "dup2", "dup3", "pipe", "pipe2", "poll", "ppoll",
+        "select", "pselect6", "epoll_create1", "epoll_ctl", "epoll_wait", "epoll_pwait",
+        "mmap", "mprotect", "munmap", "mremap", "brk", "madvise", "arch_prctl",
+        "rt_sigaction", "rt_sigprocmask", "rt_sigreturn", "rt_sigtimedwait", "sigaltstack", "restart_syscall",
+        "futex", "rseq", "set_tid_address", "set_robust_list", "get_robust_list",
+        "clock_gettime", "clock_getres", "clock_nanosleep", "nanosleep", "gettimeofday", "time", "setitimer", "getitimer",
+        "getrandom", "uname", "sysinfo", "getpid", "getppid", "gettid", "getpgrp", "getpgid",
+        "getsid", "getuid", "geteuid", "getgid", "getegid", "getgroups", "getresuid", "getresgid",
+        "getrlimit", "setrlimit", "prlimit64", "getrusage", "times", "sched_getaffinity",
+        "sched_setaffinity", "sched_yield", "getpriority", "setpriority", "umask",
+        "mkdir", "mkdirat", "rmdir", "unlink", "unlinkat", "rename", "renameat", "renameat2",
+        "chmod", "fchmod", "fchmodat", "chown", "fchown", "fchownat", "utimensat", "ftruncate",
+        "truncate", "fsync", "fdatasync", "symlink", "symlinkat", "chdir", "fchdir",
+        "execve", "execveat", "vfork", "wait4", "waitid", "kill", "tgkill", "tkill",
+        "setsid", "setpgid", "prctl", "seccomp", "capget", "capset", "setgroups", "setresuid", "setresgid",
+        "setuid", "setgid", "mount", "umount2", "pivot_root", "chroot", "sethostname",
+        "fsopen", "fsconfig", "fsmount", "move_mount", "open_tree", "mount_setattr",
+        "socketpair", "bind", "getsockname", "recvfrom", "recvmsg", "sendto", "sendmsg", "getsockopt", "setsockopt",
+        "shutdown", "exit", "exit_group"
+      ],
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "names": ["socket"],
+      "action": "SCMP_ACT_ALLOW",
+      "args": [{"index": 0, "value": 1, "op": "SCMP_CMP_EQ"}]
+    },
+    {
+      "names": ["socket"],
+      "action": "SCMP_ACT_ALLOW",
+      "args": [
+        {"index": 0, "value": 16, "op": "SCMP_CMP_EQ"},
+        {"index": 2, "value": 0, "op": "SCMP_CMP_EQ"}
+      ]
+    },
+    {
+      "names": ["clone"],
+      "action": "SCMP_ACT_ALLOW",
+      "args": [{"index": 0, "value": 2114060305, "op": "SCMP_CMP_EQ"}]
+    },
+    {
+      "names": ["clone"],
+      "action": "SCMP_ACT_ALLOW",
+      "args": [{"index": 0, "value": 16657, "op": "SCMP_CMP_EQ"}]
+    },
+    {
+      "names": ["clone"],
+      "action": "SCMP_ACT_ALLOW",
+      "args": [{"index": 0, "value": 18874385, "op": "SCMP_CMP_EQ"}]
+    },
+    {"names": ["clone3"], "action": "SCMP_ACT_ERRNO", "errnoRet": 38}
+  ]
+}

@@ -1,5 +1,7 @@
 # Dependency license inventory — CCA-001
 
+CCA-002 adds a separate worker image, not a change to these installed web-app dependency versions. Its pinned NsJail/Kafel and native runtime component review is in [judge-worker.md](judge-worker.md#licensing-and-distribution); native packages retain LGPL/GPL-with-exception and other component licenses. The image as a whole is not represented as exclusively Apache-2.0. No image was published.
+
 Observed on 2026-10-17 from installed Python 3.12.13 distribution metadata after the locked Linux sync. Versions and hashes are recorded in `uv.lock`. This is a metadata/license-notice review for the foundation, not a security audit or approval of the future judge. No third-party code is vendored or modified.
 
 Direct runtime dependencies: FastAPI (MIT), Pydantic (MIT), Streamlit (Apache-2.0), HTTPX (BSD), python-multipart (Apache-2.0), Uvicorn (BSD-3-Clause). Development tools: pytest and Ruff (MIT). The build backend is Hatchling 1.27.0 (MIT), with its existing upstream notices retained in the uv build cache.

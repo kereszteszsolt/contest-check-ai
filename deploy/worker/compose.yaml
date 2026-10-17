@@ -1,0 +1,21 @@
+services:
+  judge-worker:
+    build:
+      context: ../..
+      dockerfile: deploy/worker/Dockerfile
+    image: contest-check-worker:cca002
+    network_mode: none
+    read_only: true
+    user: "1000:1000"
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    init: true
+    pids_limit: 16
+    mem_limit: 384m
+    memswap_limit: 384m
+    cpus: 1.0
+    tmpfs:
+      - /workspaces:rw,nosuid,nodev,noexec,size=100663296,mode=0700,uid=1000,gid=1000
+    stdin_open: true
+    restart: "no"

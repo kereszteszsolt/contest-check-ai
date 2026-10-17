@@ -1,0 +1,4 @@
+services:
+  judge-worker:
+    security_opt:
+      - seccomp:./docker-seccomp.json

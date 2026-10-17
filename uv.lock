@@ -149,6 +149,9 @@ dev = [
     { name = "pytest" },
     { name = "ruff" },
 ]
+worker = [
+    { name = "pydantic" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -165,6 +168,7 @@ dev = [
     { name = "pytest", specifier = "==9.1.1" },
     { name = "ruff", specifier = "==0.17.1" },
 ]
+worker = [{ name = "pydantic", specifier = "==2.14.1" }]
 
 [[package]]
 name = "fastapi"
