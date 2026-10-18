@@ -153,12 +153,19 @@ class WorkflowPreview(ContractModel):
 class WorkflowFailure(ValueError):
     ERRORS = {
         "workflow_missing": (404, "The workflow is absent or expired. Start a new workflow."),
-        "workflow_capacity": (503, "The local workflow capacity is full. Delete an old workflow."),
+        "workflow_capacity": (
+            503,
+            "Local authoring capacity is full. Delete an old workflow or wait for expiry.",
+        ),
         "workflow_busy": (503, "The workflow is already running. Try later."),
         "stale_review": (409, "This review is no longer pending. Read the current preview."),
         "revision_budget": (409, "The workflow generation or tool budget is exhausted."),
         "approval_blocked": (409, "A valid generated draft is required before approval."),
         "workflow_failed": (503, "The workflow stopped unexpectedly. Start a new workflow."),
+        "workflow_conflict": (
+            409,
+            "This creation ID belongs to a different request. Refresh the workflow.",
+        ),
     }
 
     def __init__(self, code: str):

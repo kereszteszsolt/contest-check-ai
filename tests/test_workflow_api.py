@@ -227,3 +227,54 @@ def test_api_caps_workflow_body_before_parsing(client, monkeypatch, headers):
     response = client.post(ROOT, content=iter([b"x" * 6, b"x" * 6]), headers=headers)
     assert response.status_code == 413 and not client.workflow_calls
     assert response.headers["cache-control"] == "no-store"
+
+
+def test_creation_id_replay_reads_checkpoint_without_another_model_call(client):
+    headers = {"Idempotency-Key": "ab" * 16}
+    first = client.post(ROOT, json=REQUEST, headers=headers)
+    assert first.status_code == 200 and first.json()["workflow_id"] == headers["Idempotency-Key"]
+    assert client.post(ROOT, json=REQUEST, headers=headers).json() == first.json()
+    approved = review(client, first.json(), "approve").json()
+    assert client.post(ROOT, json=REQUEST, headers=headers).json() == approved
+    assert len(client.workflow_calls) == 1
+    conflict = client.post(ROOT, json=REQUEST | {"topic": "different"}, headers=headers)
+    assert conflict.status_code == 409 and conflict.json()["code"] == "workflow_conflict"
+    client.delete(f"{ROOT}/{approved['workflow_id']}")
+    assert client.post(ROOT, json=REQUEST, headers=headers).status_code == 404
+    assert len(client.workflow_calls) == 1
+
+
+@pytest.mark.parametrize("creation_id", ["../escape", "A" * 32, "a" * 33, ""])
+def test_invalid_creation_ids_never_contact_a_model(client, creation_id):
+    assert (
+        client.post(ROOT, json=REQUEST, headers={"Idempotency-Key": creation_id}).status_code == 422
+    )
+    assert not client.workflow_calls
+
+
+def test_failed_creation_id_is_retired_instead_of_silently_retried(client, monkeypatch):
+    from contest_check.authoring_workflow import AuthoringWorkflow
+    from contest_check.workflow_contracts import WorkflowFailure
+
+    async def fail(workflow):
+        workflow.session.budget.reserve()
+        client.workflow_calls.append("failed")
+        raise WorkflowFailure("workflow_failed")
+
+    monkeypatch.setattr(AuthoringWorkflow, "start", fail)
+    headers = {"Idempotency-Key": "cd" * 16}
+    assert client.post(ROOT, json=REQUEST, headers=headers).status_code == 503
+    assert client.post(ROOT, json=REQUEST, headers=headers).status_code == 404
+    assert len(client.workflow_calls) == 1
+
+
+def test_retired_creation_ids_are_bounded_and_expire(client, monkeypatch):
+    import contest_check.authoring_workflow as module
+
+    monkeypatch.setattr(module, "MAX_CREATIONS", 1)
+    headers = {"Idempotency-Key": "ef" * 16}
+    first = client.post(ROOT, json=REQUEST, headers=headers).json()
+    client.delete(f"{ROOT}/{first['workflow_id']}")
+    assert client.post(ROOT, json=REQUEST).status_code == 503
+    client.workflow_store.used_ids[first["workflow_id"]] -= module.WORKFLOW_TTL_SECONDS + 1
+    assert client.post(ROOT, json=REQUEST).status_code == 200

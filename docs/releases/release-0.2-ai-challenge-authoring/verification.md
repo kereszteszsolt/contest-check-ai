@@ -1,13 +1,13 @@
 # Release 0.2 verification
 
-**Status: In progress — CCA-005/006/007 implemented and locally verified with mocked providers/workers and synthetic artifacts.** Actual graph approval/resume and approved student/teacher ZIP/PDF exports are exercised; the teacher ZIP passes judge validation and a Hungarian sample PDF was rendered/visually inspected by Codex. No live model, generated-reference execution, independent correctness review or polished approval/download UI is claimed verified.
+**Status: CCA-005–008 implemented and locally verified with mocked providers/workers and synthetic artifacts/teacher decisions.** Actual graph approval/resume, Streamlit API integration, separate ZIP/PDF exports and fresh-browser-session checkpoint recovery are exercised. The teacher ZIP passes judge validation. Hungarian sample PDFs were parsed, rendered and visually inspected by Codex. No live model, generated-reference execution, independent teacher correctness review, hosted CI or public deployment is claimed. Historical sections below describe the scope at their respective story boundaries; CCA-008 supersedes earlier planned-UI status.
 
 | Story | State | Mock/Pydantic tests | Approved model / sandbox / HITL | Notes |
 | --- | --- | --- | --- | --- |
 | CCA-005 | Implemented | 78 focused checks; 408 full-suite tests; lint/format passed | Live model / generated-code sandbox / HITL Not run | Actual LangChain/SDK serialization and parsing over mocked HTTP; API/AppTest mocks |
 | CCA-006 | Implemented | 72 new checks; 150 focused authoring checks; 480 full-suite tests; lint/format passed | Actual graph/checkpoint/approve-revise-reject with synthetic decisions; live model/reference/manual teacher smoke Not run | Strict state, fixed tools, bounded call ledgers, private local API |
 | CCA-007 | Implemented | 42 new checks; 173 focused checks; 522 full-suite tests; lint/format passed | Mocked graph/API decisions; real ZIP/PDF parsing and Codex visual PDF inspection; live reference Not run | Separate public/private projections, fixed starter, direct teacher-ZIP judge ingestion |
-| CCA-008 | Planned | Not run | Not run | No polished approval UI, independent final verification or final smoke tests |
+| CCA-008 | Implemented | 80 focused checks; 542 full-suite tests; lint/format passed | Actual UI/API/graph, synthetic browser approve/revise/reject and resume; live provider/reference/manual independent review Not run | Lost-response recovery, checkpoint-bound controls, bounded creation ledger, separate audience-validated downloads |
 
 ## Evidence instructions
 
@@ -205,3 +205,65 @@ The fixture generation used `PYTHONPATH=tests:src /tmp/cca006-venv/bin/python` w
 The final diff is restricted to CCA-007 implementation/contracts, its tests/font notices and current status/evidence documentation. Final audit confirmed 12 edited tracked paths, 9 new paths, exact SPDX headers in 5 new Python source/test files, 90 resolving local Markdown links and preserved CRLF in 11 edited existing files. The worktree credential-pattern scan found no matches; the Git index is empty. `git -c core.whitespace=cr-at-eol diff HEAD --check` exited 0. Final wheel application/font/notice bytes match current sources, and upstream font binaries are unchanged. The implementation review ended without a commit. After separate user commit approval, the exact 21-path scope, SPDX/font notices, worktree credential-pattern scan, wheel/source equality, lint and formatting were checked again before staging. Only these intended paths are included in the approved commit; no push is authorized.
 
 **Not run:** live Ollama/OpenRouter or billable calls, actual generated-reference/contestant execution, new sandbox qualification/Docker build, independent challenge correctness review, manual teacher UI/download flow, polished Streamlit authoring/review integration, complex-script shaping/universal Unicode, durable/multi-process workflow recovery, hosted CI/public deployment, independent security/legal audit. Existing Release 0.1 sandbox evidence remains historical and separate. CCA-008 remains Planned.
+
+## 2026-10-18 — CCA-008 teacher approval UI and verification
+
+Authorization: the user requested continuing implementation with CCA-008. This is implementation approval for this story only. The worktree was clean on `dev_r0.2` at `ea3c537` (CCA-007). No live provider/paid call, generated-source execution or push was authorized/performed. Implementation ended without a commit; the user subsequently gave separate approval to commit the reviewed CCA-008 changes.
+
+### Implemented behavior and boundaries
+
+Streamlit **AI task draft** now uses the actual workflow API: explicit configured model selection, topic/difficulty/instructions, loading/status, inert public/private previews, cumulative checks/warnings, bounded revision text and explicit approve/revise/reject. Current-checkpoint widget keys and review IDs prevent delayed old clicks from approving a revision; every new checkpoint resets its acknowledgment. The UI requires the teacher's review acknowledgment for approval and prominently keeps correctness **unverified**. Rejection provides no final packages. Reference checks default off, use only the existing qualified-worker path when enabled, and remain visibly skipped/blocked otherwise.
+
+Creation stores a cryptographically random private workflow ID before POST using the optional typed `Idempotency-Key` header. Repeating an admitted identical request reads the stored checkpoint without another model call; changed payloads conflict. A bounded ledger retains up to 64 creation IDs, including failed/deleted entries, until one hour after creation. The existing active-workflow cap remains eight. These guarantees are process-local and expire; API restart loses them. Clients must not automatically repost missing workflows. The UI never retries generation/revision automatically: timeouts, malformed previews or unexpected IDs/models hide decisions/downloads until explicit GET refresh. A fresh browser session can resume by private workflow ID. Inputs stay fixed within the workflow.
+
+Approved workflows offer separate student/teacher ZIP preparation and downloads; a separate default-off assertion includes an independently reviewed reference only in the teacher ZIP. The UI validates bounded response bytes, attachment/type, both audience layouts and the student manifest against the reviewed draft before offering either download. Reference-option changes, mutations, refresh and new workflows clear cached archives. Downloads use `on_click="ignore"` and do not call a provider/worker. The backend approval gate remains authoritative.
+
+Untrusted instructions, statements, explanations, warnings and source display as `st.text`/`st.code`, never active Markdown/HTML or executable source. Negative tests include an external-image URL, script markup and an `os.system` source string, treated only as data. No filesystem/shell/GitHub/web tool, new execution path or permission bypass is introduced. Existing generation limits, two fixed graph checking tools, worker qualification and official judge verdicts retain their contracts. CI explicitly clears all six provider slots as well as credentials/worker flags and runs mocked pytest only. No runtime dependency or lockfile changed. README diagrams/dependency/deployment descriptions and teacher/setup/package documentation now match this shipped UI.
+
+### Environment, commands and observed results
+
+Linux/WSL2 `6.6.87.2-microsoft-standard-WSL2`, x86-64; CPython **3.12.13**, uv **0.11.29**, pytest **9.1.1**, Ruff **0.17.1**, Streamlit **1.66.0**, FastAPI **0.143.3**, LangGraph **1.2.16**. Existing pinned environment: `/tmp/cca006-venv`, `/tmp/cca006-python`, `/tmp/cca006-uv-cache`. TestClient/LangGraph tests used authorized host execution for the previously recorded restricted cross-thread event-loop limitation; provider/worker behavior remained mocked.
+
+```bash
+/tmp/cca006-venv/bin/pytest -q tests/test_workflow_api.py tests/test_authoring_workflow.py tests/test_authoring_ui.py tests/test_package_api.py
+/tmp/cca006-venv/bin/pytest -q
+/tmp/cca006-venv/bin/ruff check .
+/tmp/cca006-venv/bin/ruff format --check .
+/home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin/node --check scripts/verify_authoring_ui.cjs
+git -c core.whitespace=cr-at-eol diff HEAD --check
+```
+
+Final focused result: **80 passed in 9.22s**. Final full result: **542 passed in 30.46s**, a net increase of **20** over CCA-007's 522. No pytest warnings. Ruff passed; formatting reports **88 files already formatted**. JavaScript syntax and whitespace checks exited 0. The earlier complete run passed **536 in 29.04s** before the additional response/budget/stale-widget cases. Current UI-only checks also passed **16 in 7.62s**.
+
+Tests exercise actual LangGraph interrupt/checkpoint/resume through FastAPI and Streamlit AppTest, with mocked generation/worker outputs: explicit/no-default selection, cloud cost notice, missing keys/catalog failure, approved/revised/rejected paths, exhausted budget, late prior-checkpoint approval events, lost creation/revision/approval responses followed by GET recovery without another call, malformed model/HTTP previews, wrong workflow/model responses, swapped teacher-as-student ZIP rejection, optional reference/download cache resets, and bounded proxy-free preview reads. API tests cover identical creation replay, conflicting payloads, invalid IDs, failed/deleted ID retirement and ledger capacity/expiry; existing tests cover stale/concurrent decisions and sandbox-only reference delegation.
+
+Initial focused failures were incorrect test expectations for the existing `challenge/tests/` / `teacher/reference/` archive prefixes and explicit empty model selection after starting over. They were corrected without changing export behavior. The first stale-click test reused an obsolete AppTest element tree and failed on a removed checkbox key; the final test submits the old trigger ID alongside the current widget state. Initial lint found an unused import/long fixture line, corrected. All final checks above passed.
+
+### Real local browser, ZIP/PDF and visual checks
+
+The new operator-only `scripts/verify_authoring_ui.py` / `.cjs` harness starts the real loopback API and Streamlit, overrides generation with a fixed mock, disables the worker and refuses provider transport. It is outside pytest/CI. Verification tooling was installed only under `/tmp`: Playwright **1.61.1** with Node **24.18.0**, explicitly selecting the already installed Chromium **151.0.7922.34** and temporary Linux libraries. The application's dependencies are unchanged.
+
+```bash
+PATH=/home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin:$PATH npm install --prefix /tmp/cca008-browser --no-audit --no-fund playwright@1.61.1
+LD_LIBRARY_PATH=/tmp/type-nudge-linux-deps/extracted/usr/lib/x86_64-linux-gnu CCA_BROWSER_NODE=/home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin/node CCA_PLAYWRIGHT_MODULE=/tmp/cca008-browser/node_modules/playwright CCA_BROWSER_EXECUTABLE=/home/zsolti-wsl/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome /tmp/cca006-venv/bin/python scripts/verify_authoring_ui.py --output /tmp/cca008-ui-evidence
+```
+
+Final harness exited 0. Evidence: `/tmp/cca008-ui-evidence/verification.json`, initial/approved/rejected/invalid-output desktop screenshots, review/review-controls mobile screenshots, downloaded `student.zip`, `teacher.zip` and extracted `problem.pdf`. It exercised explicit selection and the cloud notice without a provider call, generation, read-only refresh, revision, acknowledgment/approval, separate downloads, new-browser-session resume by ID without regeneration, rejection with no downloads and safe malformed output. **Four fixed mock generation attempts**, including one revision and one malformed response; **zero actual provider/worker calls**, **zero page errors**, **zero attempted external browser requests** despite generated image markup. The final retained fixture workflow was rejected. Viewports: **1440×1000** and **390×844**, with no document horizontal overflow. Child services were stopped by the harness.
+
+Browser fixture model labels are `ollama / offline-fixture:1` and `openrouter / offline/fixture`; these are **mock labels**, not verified model versions. The cloud model was only selected to inspect the cost notice; it was never contacted. Source in the browser fixture is comment-only and never imported or executed. Decisions were synthetic browser actions, not independent human teacher review.
+
+Initial browser runs exposed harness interaction issues: native radio/checkbox input overlays required clicking their visible labels; Streamlit text areas required Ctrl+Enter before disabled actions could enable; sidebar resize animation and persisted collapsed state required native collapse/expand handling and waiting for the animation. These were harness fixes; no application CSS or forced-click bypass was added. The final fresh output directory contains successful evidence only. Codex visually inspected the final mobile header/warnings and decision controls, desktop approval/download view and rendered PDF.
+
+The actual downloaded archives passed `validate_export_archive`; pypdf independently extracted the Hungarian title/statement and found no private fixture marker. Teacher ZIP contains hidden tests and omits the reference by default. The **one-page** PDF was rendered using the existing temporary **pypdfium2 5.14.0** environment (`/tmp/cca007-pdf-review/bin/python`), scale 1.5, and saved as `/tmp/cca008-ui-evidence/problem-page-1.png`. Visual inspection found legible Hungarian long accents, statement, constraints/examples and the explicit approved/unverified notice; the image URL remains literal text. The fixture is not an algorithm-correctness benchmark.
+
+| Downloaded artifact | SHA-256 |
+| --- | --- |
+| `student.zip` | `6c84bc1ef74bc8a9bc2fbbfbb82d8e7c517c4a2ae40add6d57af2f46fafddcf5` |
+| `teacher.zip` | `9a0b3c0ec90be87bf8c2d88ea4ec10c64cbf88a507ebf0d52b027143f571f9b2` |
+| `problem.pdf` | `3e5207a70e8f86c75058e3672dd83f7276192c66e2fa67db520b6dc6c906112d` |
+
+### Review and limitations
+
+Final scope: 17 edited tracked paths and two new operator harness sources; no unrelated changes. Both new source files have the exact two-line SPDX header. The final audit found 84 resolving local Markdown links, consistent CRLF in 10 edited existing files, zero credential-pattern matches in the changed/new files and zero staged paths. `git -c core.whitespace=cr-at-eol diff HEAD --check` exited 0; final Ruff/format/JavaScript syntax checks passed. The implementation review ended without a commit. After separate user commit approval, the 19-path scope, SPDX headers, credential-pattern scan, local links, lint, formatting, JavaScript syntax and whitespace checks were verified again. Only the intended CCA-008 paths are included in the approved commit; no push is authorized.
+
+**Not run:** live Ollama/OpenRouter or paid calls, real generated-reference/contestant execution, fresh sandbox qualification/Docker build, independent challenge/reference/private-test correctness review by a teacher, a live teacher/model/sandbox demo, durable or multi-process checkpoint recovery, hosted CI/public deployment, other browser/OS/architectures or independent security/legal audit. Historical Release 0.1 sandbox evidence is separate and does not qualify a new worker process/host. Approval and generated reference/test agreement cannot establish independent correctness. The UI/API are for a local teacher/operator, not a public account service; the process-local ID ledger is not crash-proof exactly-once billing protection.

@@ -1,6 +1,6 @@
-# Local development — validation and Python judging
+# Local development — Python judging and challenge authoring
 
-Python **3.12.13**, `uv`, and a local Linux environment are used for the verified setup. `.python-version` selects the interpreter; direct dependencies are pinned and `uv.lock` records transitive versions and hashes. Dependency download happens during installation only. The application performs no runtime package downloads or model calls. Uploaded programs execute only in separately qualified offline workers.
+Python **3.12.13**, `uv`, and a local Linux environment are used for the verified setup. `.python-version` selects the interpreter; direct dependencies are pinned and `uv.lock` records transitive versions and hashes. Dependency download happens during installation only. The application performs no runtime package/model downloads. Optional configured model calls require explicit teacher generation/revision. Uploaded programs execute only in separately qualified offline workers.
 
 ```bash
 uv sync --locked
@@ -50,9 +50,20 @@ uv run --frozen ruff format --check .
 
 The default tests use inert in-memory archives and mocked workers. API checks use in-process TestClient; Streamlit AppTest checks validation/judging/results/export/error states with mocked HTTP responses. Report tests inspect independently parsed PDF/XLSX files, deterministic output, formulas/links, limits and the maximum 10,000 test rows. These unit checks are distinct from actual browser and sandbox evidence. The optional [offline browser harness](verdicts-and-reporting.md#safe-verification-and-offline-mode) runs real local services with a fixed mocked worker. Restricted agent environments may require permission for TestClient's cross-thread event-loop sockets.
 
-## Optional AI model adapters — CCA-005
+## Optional AI challenge authoring — CCA-005–008
 
-Configure provider settings on the API process only, then choose **AI task draft** in the Streamlit Workspace sidebar. The judge screen does not invoke models. No model is selected by default; Generate draft performs one bounded provider call and displays an unverified draft. Provider credentials are never entered in the UI or sent to workers. Missing cloud credentials disable cloud choices. The application does not load `.env`, fetch model lists, download models, switch providers or retry automatically. Follow [model configuration](model-configuration.md) for exact slots, endpoints, limits, API/error contracts and mocked verification. CCA-006 also exposes a separate [backend authoring workflow](authoring-workflow.md) with bounded graph/check tools and teacher approve/revise/reject checkpoints; it does not change this Streamlit one-call preview. Reference checks require explicit opt-in and the qualified worker. CCA-007 adds [approved student/teacher package downloads](challenge-packages.md) through the backend API. Polished workflow UI and final independent teacher verification remain planned.
+Configure provider slots/credentials only on the API process using [model configuration](model-configuration.md), then choose **AI task draft** in the Streamlit Workspace sidebar. The judge screen does not invoke models. There is no default model choice, automatic retry, provider fallback, model discovery/download or automatic `.env` loading. Missing cloud credentials disable cloud choices. Credentials never enter the UI or worker.
+
+Follow the [teacher workflow](authoring-workflow.md#streamlit-teacher-workflow): select model, topic/difficulty/instructions, generate, inspect public/private content and warnings, request bounded changes or explicitly approve/reject. Reference checks default off and require both operator flags plus fresh worker qualification. Approval leaves correctness unverified; independent teacher review is still required. Approved drafts offer separate [student/teacher ZIP downloads](challenge-packages.md); keep the latter private. After a lost response use Refresh workflow, or reconnect by private workflow ID in a fresh browser session. Checkpoints expire after one hour and disappear on API restart. There is no durable database or public account/sharing system.
+
+Safe focused tests and the optional fixed-mock browser harness:
+
+```bash
+uv run --frozen pytest -q tests/test_workflow_api.py tests/test_authoring_workflow.py tests/test_authoring_ui.py tests/test_package_api.py
+uv run --frozen python scripts/verify_authoring_ui.py --output .runtime/cca008-verification
+```
+
+The harness needs separately installed Node/Playwright/Chromium; it starts real loopback UI/API services with a fixed model mock and disabled worker. No live/paid call occurs. See [verification evidence](releases/release-0.2-ai-challenge-authoring/verification.md) for results and limits. A real model smoke requires separate approval; the shipped feature is not proof of model availability or challenge correctness.
 
 ## Docker layout (worker only)
 

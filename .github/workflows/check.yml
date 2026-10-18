@@ -17,6 +17,12 @@ jobs:
       OPENROUTER_API_KEY: ""
       OLLAMA_BASE_URL: ""
       OLLAMA_API_KEY: ""
+      OLLAMA_MODEL_1: ""
+      OLLAMA_MODEL_2: ""
+      OLLAMA_MODEL_3: ""
+      OPENROUTER_MODEL_1: ""
+      OPENROUTER_MODEL_2: ""
+      OPENROUTER_MODEL_3: ""
       LANGSMITH_TRACING: "false"
       LANGCHAIN_TRACING_V2: "false"
     steps:

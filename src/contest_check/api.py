@@ -4,7 +4,7 @@
 import threading
 from typing import Annotated, Literal
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Header, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
@@ -262,19 +262,27 @@ async def create_authoring_workflow(
     settings: Annotated[ModelSettings, Depends(get_model_settings)],
     store: Annotated[WorkflowStore, Depends(get_workflow_store)],
     worker: Annotated[object, Depends(get_worker)],
+    creation_id: Annotated[OpaqueID | None, Header(alias="Idempotency-Key")] = None,
 ):
     response.headers["Cache-Control"] = "no-store"
     if not AUTHORING_SLOT.acquire(blocking=False):
         raise WorkflowFailure("workflow_busy")
     judge_acquired = False
     try:
+        if creation_id is not None:
+            existing = store.existing_creation(creation_id, request)
+            if existing is not None:
+                return existing.preview()
         if request.run_reference_tests and worker is not None:
             judge_acquired = JUDGE_SLOT.acquire(blocking=False)
             if not judge_acquired:
                 raise WorkflowFailure("workflow_busy")
         try:
             workflow = store.create(
-                request, settings, worker if request.run_reference_tests else None
+                request,
+                settings,
+                worker if request.run_reference_tests else None,
+                workflow_id=creation_id,
             )
         except ProviderError as error:
             return error_response(error.code, error.message, error.status)

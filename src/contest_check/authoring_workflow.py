@@ -12,6 +12,7 @@ from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 from langsmith import tracing_context
+from pydantic import TypeAdapter
 from starlette.concurrency import run_in_threadpool
 
 from contest_check.authoring_contracts import DraftContext
@@ -23,6 +24,7 @@ from contest_check.workflow_contracts import (
     MAX_REFERENCE_RUNS,
     MAX_TOOL_CALLS,
     UNVERIFIED,
+    OpaqueID,
     ReviewEvent,
     ReviewRequest,
     ToolRecord,
@@ -34,6 +36,7 @@ from contest_check.workflow_contracts import (
 )
 
 MAX_WORKFLOWS = 8
+MAX_CREATIONS = 64
 WORKFLOW_TTL_SECONDS = 3_600
 
 
@@ -46,11 +49,15 @@ def updated(state: WorkflowState, **changes) -> dict:
 class AuthoringWorkflow:
     """One process-lifetime checkpoint and call ledger; never accepts raw graph commands."""
 
-    def __init__(self, request: WorkflowRequest, settings: ModelSettings, worker=None):
+    def __init__(
+        self, request: WorkflowRequest, settings: ModelSettings, worker=None, *, workflow_id=None
+    ):
         self.request = WorkflowRequest.model_validate(request.model_dump(mode="json"))
         self.session = GenerationSession(settings, request.model_slot)
         self.worker = worker
-        self.workflow_id = secrets.token_hex(16)
+        self.workflow_id = TypeAdapter(OpaqueID).validate_python(
+            workflow_id or secrets.token_hex(16)
+        )
         self.created = time.monotonic()
         self.lock = threading.Lock()
         self.tool_calls = 0
@@ -310,6 +317,7 @@ class WorkflowStore:
 
     def __init__(self):
         self.workflows = {}
+        self.used_ids = {}
         self.lock = threading.RLock()
 
     def _expire(self):
@@ -320,13 +328,35 @@ class WorkflowStore:
             ):
                 self.delete(workflow_id)
 
-    def create(self, request, settings, worker=None):
+        self.used_ids = {
+            key: created
+            for key, created in self.used_ids.items()
+            if key in self.workflows or time.monotonic() - created < WORKFLOW_TTL_SECONDS
+        }
+
+    def existing_creation(self, workflow_id, request):
+        """Replays read state only; retired IDs cannot silently regenerate a task."""
         with self.lock:
             self._expire()
-            if len(self.workflows) >= MAX_WORKFLOWS:
+            workflow = self.workflows.get(workflow_id)
+            if workflow is not None:
+                if workflow.request != request:
+                    raise WorkflowFailure("workflow_conflict")
+                return workflow
+            if workflow_id in self.used_ids:
+                raise WorkflowFailure("workflow_missing")
+            return None
+
+    def create(self, request, settings, worker=None, *, workflow_id=None):
+        with self.lock:
+            self._expire()
+            if workflow_id is not None and self.existing_creation(workflow_id, request) is not None:
+                raise WorkflowFailure("workflow_conflict")
+            if len(self.workflows) >= MAX_WORKFLOWS or len(self.used_ids) >= MAX_CREATIONS:
                 raise WorkflowFailure("workflow_capacity")
-            workflow = AuthoringWorkflow(request, settings, worker)
+            workflow = AuthoringWorkflow(request, settings, worker, workflow_id=workflow_id)
             self.workflows[workflow.workflow_id] = workflow
+            self.used_ids[workflow.workflow_id] = workflow.created
             return workflow
 
     def get(self, workflow_id):
