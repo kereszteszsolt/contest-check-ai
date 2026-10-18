@@ -45,7 +45,15 @@ def serve(port):
         }
     )
     store = WorkflowStore()
-    calls = []
+    calls, runs = [], []
+    create = store.create
+
+    def track_create(*args, **kwargs):
+        workflow = create(*args, **kwargs)
+        runs.append(workflow)
+        return workflow
+
+    store.create = track_create
 
     async def deny_network(*args, **kwargs):
         raise AssertionError("Offline verification forbids provider traffic.")
@@ -92,6 +100,9 @@ def serve(port):
         return {
             "calls": calls,
             "statuses": [run.preview().state.status for run in store.workflows.values()],
+            "workflow_ids": list(store.workflows),
+            "checkpoint_count": sum(len(list(run.checkpointer.list(run.config))) for run in runs),
+            "retained_previews": sum(run.view is not None for run in runs),
         }
 
     uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
@@ -196,8 +207,10 @@ def verify(output):
             assert "teacher/reference/main.py" not in archive.namelist()
             checks = json.loads(archive.read("teacher/checks.json"))
             assert checks["verification"] == "unverified"
-        assert len(evidence["backend"]["calls"]) == 4
-        assert evidence["backend"]["statuses"] == ["rejected"]
+        assert len(evidence["backend"]["calls"]) == 7
+        assert evidence["backend"]["statuses"] == []
+        assert evidence["backend"]["checkpoint_count"] == 0
+        assert evidence["backend"]["retained_previews"] == 0
         evidence.update(
             {
                 "execution": "Fixed mocked generation; no provider/worker/source execution",

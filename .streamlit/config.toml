@@ -4,6 +4,10 @@ headless = true
 maxUploadSize = 10
 maxMessageSize = 22
 fileWatcherType = "none"
+disconnectedSessionTTL = 0
 
 [browser]
 gatherUsageStats = false
+
+[client]
+toolbarMode = "viewer"

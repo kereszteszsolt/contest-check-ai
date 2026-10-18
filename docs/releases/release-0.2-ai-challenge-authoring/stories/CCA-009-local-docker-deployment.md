@@ -19,6 +19,7 @@ CCA-001–008, a local Linux-container Docker daemon/Compose, the existing revie
 ## Acceptance criteria
 
 - [x] One documented Compose workflow builds the locked Python application and starts healthy UI/API services with loopback-only published ports; restart/stop commands are provided.
+- [x] The teacher UI hides Streamlit developer controls (Deploy, Rerun, Clear cache and auto rerun) while retaining native System/Light/Dark themes, Print and browser-supported Record screen.
 - [x] Runtime containers use a non-root account, bounded resources, read-only root and temporary scratch storage. No local credentials, runtime uploads or Git checkout are copied into the image.
 - [x] Only API receives configured model settings/credentials from the root `.env`; web and judge workers receive no model keys. Startup/health/catalog/browser checks make no live or billable generation call.
 - [ ] Default Compose keeps code execution disabled; an explicit reviewed judge override grants the trusted API only the local daemon access required by the existing fixed Docker transport. This is Docker administration access and must be documented as such.

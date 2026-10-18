@@ -5,22 +5,22 @@
 
 import io
 import json
-import secrets
 import zipfile
 
 import httpx
 import streamlit as st
-from pydantic import TypeAdapter
+from streamlit import runtime
+from streamlit.runtime.scriptrunner import get_script_run_ctx
 
 from contest_check.archives import DEFAULT_LIMITS, validate_export_archive
 from contest_check.authoring_contracts import MAX_INSTRUCTIONS, ModelCatalog
+from contest_check.authoring_session import AuthoringSession
 from contest_check.challenge_packages import starter
 from contest_check.model_configuration import ERRORS as PROVIDER_ERRORS
 from contest_check.package_contracts import PackageError, StudentManifest
 from contest_check.workflow_contracts import (
     MAX_ATTEMPTS,
     UNVERIFIED,
-    OpaqueID,
     ReviewRequest,
     WorkflowFailure,
     WorkflowPreview,
@@ -54,6 +54,46 @@ def api_request(api_url, method, path, *, payload=None, creation_id=None, slow=F
             )
 
 
+@st.cache_resource(scope="session", on_release=lambda session: session.close(), show_spinner=False)
+def browser_authoring_session(api_url):
+    # Pinned Streamlit 1.66 runtime adapter: download storage outlives a disconnected page.
+    manager = runtime.get_instance().media_file_mgr
+    session_id = get_script_run_ctx().session_id
+
+    def release_files():
+        manager.clear_session_refs(session_id)
+        # Downloads use mark-then-delete; both passes preserve other active sessions' refs.
+        manager.remove_orphaned_files()
+        manager.remove_orphaned_files()
+
+    return AuthoringSession(api_url, api_request, release_files)
+
+
+def clear_authoring_state():
+    for key in list(st.session_state):
+        if key.startswith(("authoring_", "revision_", "acknowledge_")):
+            del st.session_state[key]
+
+
+def leave_authoring():
+    session = st.session_state.get("authoring_resource")
+    if session is not None:
+        session.close()
+        browser_authoring_session.clear(session.api_url)
+        clear_authoring_state()
+
+
+def bind_authoring_session(api_url):
+    session = browser_authoring_session(api_url)
+    previous = st.session_state.get("authoring_resource")
+    if previous is not session:
+        if previous is not None:
+            previous.close()
+        clear_authoring_state()
+        st.session_state["authoring_resource"] = session
+    return session
+
+
 def safe_error(response):
     try:
         code = response.json().get("code")
@@ -80,7 +120,9 @@ def accept_preview(response):
         or preview.state.model.model_dump(mode="json") != expected["model"]
     ):
         raise ValueError("The API returned a different request or model.")
-    st.session_state["authoring_preview"] = preview.model_dump(mode="json")
+    st.session_state["authoring_preview"] = st.session_state["authoring_resource"].remember(
+        "preview", preview.model_dump(mode="json")
+    )
 
 
 def transition(api_url, method, path, **kwargs):
@@ -101,7 +143,7 @@ def transition(api_url, method, path, **kwargs):
         )
 
 
-def new_workflow(api_url):
+def new_workflow(api_url, browser_session):
     try:
         catalog_response = api_request(api_url, "GET", "/api/authoring/models")
         catalog_response.raise_for_status()
@@ -132,11 +174,15 @@ def new_workflow(api_url):
             "and may incur charges. Generate only if you accept this."
         )
     topic = st.text_input("Topic", max_chars=120, key="authoring_topic")
-    difficulty = st.selectbox("Difficulty", ["beginner", "intermediate", "advanced"])
+    difficulty = st.selectbox(
+        "Difficulty", ["beginner", "intermediate", "advanced"], key="authoring_difficulty"
+    )
     instructions = st.text_area(
         "Teacher instructions", max_chars=MAX_INSTRUCTIONS, key="authoring_instructions"
     )
-    run_reference = st.checkbox("Request isolated reference checks", value=False)
+    run_reference = st.checkbox(
+        "Request isolated reference checks", value=False, key="authoring_reference_checks"
+    )
     st.caption(
         "Reference code runs only in the separately enabled, qualified offline worker. "
         "Unavailable checks remain blocked; passing checks do not establish correctness."
@@ -149,12 +195,19 @@ def new_workflow(api_url):
             instructions=instructions,
             run_reference_tests=run_reference,
         )
-        workflow_id = secrets.token_hex(16)
+        try:
+            workflow_id = browser_session.create_id()
+        except ValueError:
+            st.info("This session ended. Reload the page to start a new draft.")
+            return
         st.session_state["authoring_workflow_id"] = workflow_id
-        st.session_state["authoring_expected"] = {
-            "request": request.model_dump(mode="json"),
-            "model": choices[slot].model_dump(mode="json"),
-        }
+        st.session_state["authoring_expected"] = browser_session.remember(
+            "request",
+            {
+                "request": request.model_dump(mode="json"),
+                "model": choices[slot].model_dump(mode="json"),
+            },
+        )
         with st.status("Generating and checking the draft…"):
             transition(
                 api_url,
@@ -320,6 +373,7 @@ def package_downloads(api_url, preview):
                     if manifest != StudentManifest.from_draft(preview.state.draft):
                         raise ValueError("Archive does not match the reviewed draft.")
                 packages[audience] = (filename, response.content)
+            st.session_state["authoring_resource"].remember("packages", packages)
             st.session_state["authoring_packages"] = (cache_key, packages)
         except (httpx.HTTPError, ValueError, zipfile.BadZipFile, KeyError):
             st.error(
@@ -341,32 +395,17 @@ def package_downloads(api_url, preview):
 def show_authoring(api_url: str):
     st.subheader("AI task draft")
     st.caption("Teacher workspace. Do not paste student submissions or personal data.")
+    browser_session = bind_authoring_session(api_url)
+    st.caption("Drafts are temporary. Leaving this workspace or disconnecting deletes the draft.")
     workflow_id = st.session_state.get("authoring_workflow_id")
     if not workflow_id:
-        with st.expander("Resume an existing workflow"):
-            resume_id = st.text_input("Private workflow ID", max_chars=32)
-            st.caption(
-                "Keep this ID private. Checkpoints last at most one hour in this API process."
-            )
-            if st.button("Resume workflow", disabled=not resume_id):
-                try:
-                    TypeAdapter(OpaqueID).validate_python(resume_id)
-                except ValueError:
-                    st.error("Enter the 32 lowercase hexadecimal characters of the workflow ID.")
-                else:
-                    st.session_state["authoring_workflow_id"] = resume_id
-                    transition(api_url, "GET", f"{ROOT}/{resume_id}")
-                    st.rerun()
-        new_workflow(api_url)
+        new_workflow(api_url, browser_session)
         return
-    st.text(f"Private workflow ID: {workflow_id}")
-    st.caption(
-        "Refresh reads the checkpoint without calling a model. Inputs stay fixed for this workflow."
-    )
-    if st.button("Refresh workflow", key=f"refresh_{workflow_id}"):
+    st.caption("Refresh reads the current draft without calling a model.")
+    if st.button("Refresh draft", key=f"refresh_{workflow_id}"):
         transition(api_url, "GET", f"{ROOT}/{workflow_id}")
         st.rerun()
-    if st.button("Delete workflow and start over", key=f"delete_{workflow_id}"):
+    if st.button("Discard draft and start over", key=f"delete_{workflow_id}"):
         try:
             response = api_request(api_url, "DELETE", f"{ROOT}/{workflow_id}")
             if response.status_code not in (204, 404):
@@ -375,15 +414,9 @@ def show_authoring(api_url: str):
         except (httpx.HTTPError, ValueError):
             st.error("Deletion is unconfirmed. Refresh before trying again.")
             return
-        for key in (
-            "authoring_workflow_id",
-            "authoring_expected",
-            "authoring_preview",
-            "authoring_error",
-            "authoring_packages",
-            "authoring_include_reference",
-        ):
-            st.session_state.pop(key, None)
+        browser_session.forget()
+        clear_authoring_state()
+        st.session_state["authoring_resource"] = browser_session
         st.rerun()
     if st.session_state.get("authoring_error"):
         st.error(st.session_state["authoring_error"])

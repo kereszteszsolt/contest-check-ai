@@ -63,6 +63,7 @@ class AuthoringWorkflow:
         self.tool_calls = 0
         self.reference_runs = 0
         self.failed = False
+        self.discarded = threading.Event()
         self.view = None
         # Checkpoints contain application JSON values and LangGraph's safe built-in types.
         self.checkpointer = InMemorySaver(
@@ -95,6 +96,23 @@ class AuthoringWorkflow:
             "recursion_limit": 24,
         }
 
+    def _ensure_active(self):
+        if self.discarded.is_set():
+            raise WorkflowFailure("workflow_missing")
+
+    def discard(self):
+        self.discarded.set()
+        if self.lock.acquire(blocking=False):
+            try:
+                self._clear_discarded()
+            finally:
+                self.lock.release()
+
+    def _clear_discarded(self):
+        if self.discarded.is_set():
+            self.checkpointer.delete_thread(self.workflow_id)
+            self.view = None
+
     @staticmethod
     def _has_error(state):
         return any(error.attempt == state.attempts for error in state.errors)
@@ -126,6 +144,7 @@ class AuthoringWorkflow:
         )
 
     async def _generate(self, state):
+        self._ensure_active()
         attempt = state.attempts + 1
         if attempt > MAX_ATTEMPTS:
             raise WorkflowFailure("revision_budget")
@@ -170,6 +189,7 @@ class AuthoringWorkflow:
         )
 
     def _reserve_tool(self):
+        self._ensure_active()
         if self.tool_calls >= MAX_TOOL_CALLS:
             raise WorkflowFailure("revision_budget")
         self.tool_calls += 1
@@ -222,6 +242,7 @@ class AuthoringWorkflow:
         )
 
     def _prepare_review(self, state):
+        self._ensure_active()
         return updated(state, status="awaiting_review", review_id=secrets.token_hex(16))
 
     def _review(self, state):
@@ -256,15 +277,19 @@ class AuthoringWorkflow:
 
     async def _invoke(self, value):
         try:
+            self._ensure_active()
             with tracing_context(enabled=False):
                 result = await self.graph.ainvoke(value, config=self.config, durability="sync")
+            self._ensure_active()
             data = {key: value for key, value in result.items() if key != "__interrupt__"}
             state = WorkflowState.model_validate(data)
             self.view = self._preview(state)
             return self.view.model_copy(deep=True)
         except Exception:
             self.failed = True
-            raise WorkflowFailure("workflow_failed") from None
+            raise WorkflowFailure(
+                "workflow_missing" if self.discarded.is_set() else "workflow_failed"
+            ) from None
         except BaseException:
             # An uncertain effect is never retried from a partially completed checkpoint.
             self.failed = True
@@ -274,14 +299,18 @@ class AuthoringWorkflow:
         if not self.lock.acquire(blocking=False):
             raise WorkflowFailure("workflow_busy")
         try:
+            self._ensure_active()
             if self.view is not None or self.failed:
                 raise WorkflowFailure("stale_review")
             state = WorkflowState(request=self.request, model=self.session.choice)
             return await self._invoke(state.model_dump(mode="json"))
         finally:
             self.lock.release()
+            if self.discarded.is_set():
+                self.discard()
 
     def preview(self):
+        self._ensure_active()
         if self.failed:
             raise WorkflowFailure("workflow_failed")
         if self.lock.locked() or self.view is None:
@@ -294,6 +323,7 @@ class AuthoringWorkflow:
         if not self.lock.acquire(blocking=False):
             raise WorkflowFailure("workflow_busy")
         try:
+            self._ensure_active()
             if self.failed:
                 raise WorkflowFailure("workflow_failed")
             state = self.view.state if self.view is not None else None
@@ -310,6 +340,8 @@ class AuthoringWorkflow:
             return await self._invoke(Command(resume=decision.model_dump(mode="json")))
         finally:
             self.lock.release()
+            if self.discarded.is_set():
+                self.discard()
 
 
 class WorkflowStore:
@@ -375,3 +407,15 @@ class WorkflowStore:
                 raise WorkflowFailure("workflow_busy")
             workflow.checkpointer.delete_thread(workflow_id)
             del self.workflows[workflow_id]
+
+    def discard(self, workflow_id):
+        """Retire the ID immediately; a running operation clears its state on exit."""
+        with self.lock:
+            self._expire()
+            if workflow_id not in self.used_ids:
+                if len(self.used_ids) >= MAX_CREATIONS:
+                    raise WorkflowFailure("workflow_capacity")
+                self.used_ids[workflow_id] = time.monotonic()
+            workflow = self.workflows.pop(workflow_id, None)
+            if workflow is not None:
+                workflow.discard()

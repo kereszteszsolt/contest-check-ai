@@ -6,7 +6,7 @@ import os
 import httpx
 import streamlit as st
 
-from contest_check.authoring_ui import show_authoring
+from contest_check.authoring_ui import leave_authoring, show_authoring
 from contest_check.models import UploadError, ValidationSummary
 from contest_check.presentation import (
     DQ_COLUMNS,
@@ -240,6 +240,7 @@ def main() -> None:
     if workspace == "AI task draft":
         show_authoring(local_api_url())
         return
+    leave_authoring()
     st.session_state.setdefault("validation_status", "idle")
     st.session_state.setdefault("judge_status", "idle")
     st.session_state.setdefault("reports", {})

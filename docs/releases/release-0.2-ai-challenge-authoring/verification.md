@@ -338,3 +338,84 @@ Local evidence stays ignored under `.runtime/cca009-verification/`: `app-smoke.j
 ### CCA-009 commit review
 
 After explicit user commit approval, the 18-path scope, source/license headers, ignored local `.env`, credential patterns, local documentation links and empty pre-stage index were rechecked. Ruff and format passed again. Both Compose configurations validate without printing resolved secrets. The default-mode HTTP smoke was repeated with `/tmp/cca006-venv/bin/python scripts/verify_docker_app.py --output /tmp/cca009-commit-verification`: healthy API/UI, five configured models without issues, successful valid/invalid upload checks and the expected disabled-judge response. No new container, model call or program execution was started. Story acceptance items for integrated code execution remain unchecked; the commit does not enable the optional socket profile.
+
+### CCA-009 teacher toolbar follow-up — 2026-10-18
+
+Authorization: the user requested removing Streamlit's Deploy UI and recording the change, then clarified that the three-dot menu should retain System/Light/Dark themes, Print and a working Record screen. Rerun is a Streamlit UI script refresh, not submission judging; it and the other developer controls are hidden.
+
+Added `[client] toolbarMode = "viewer"` to the existing `.streamlit/config.toml`. This native setting hides Deploy, Rerun, Clear cache and auto rerun while retaining the native theme choices, Print and browser-supported Record screen. No custom menu, CSS, JavaScript injection or application/dependency change was added. Native and Docker startup use the same config. Local setup and the CCA-009 acceptance record now describe this behavior; integrated judge acceptance remains pending.
+
+Rebuilt and recreated only the socket-free base deployment. Exact verification commands:
+
+```bash
+docker compose -f compose.yaml config --quiet
+docker compose -f compose.yaml up -d --build --wait --wait-timeout 120
+docker compose -f compose.yaml exec -T web python -c 'from streamlit import config; import json; print(json.dumps({"toolbar_mode": config.get_option("client.toolbarMode")}))'
+/tmp/cca006-venv/bin/python scripts/verify_docker_app.py --output .runtime/cca009-toolbar-verification
+LD_LIBRARY_PATH=/tmp/type-nudge-linux-deps/extracted/usr/lib/x86_64-linux-gnu /home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin/node .runtime/cca009-toolbar-verification/browser.cjs
+LD_LIBRARY_PATH=/tmp/type-nudge-linux-deps/extracted/usr/lib/x86_64-linux-gnu /home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin/node .runtime/cca009-toolbar-verification/record.cjs
+git -c core.whitespace=cr-at-eol diff HEAD --check
+```
+
+Build/start exited 0; both services healthy; running web config reports `viewer`. Real Docker HTTP smoke passed: healthy API/UI, five configured model choices without issues, valid/invalid ZIP handling and expected disabled-judge response. No provider call or program execution was requested.
+
+Chromium **151.0.7922.34**, Playwright **1.61.1**: desktop **1440×1000** judge/authoring and mobile **390×844** authoring views all passed. Deploy button/menu are absent. The menu has exactly two action items, **Print** and **Record screen**, plus three native theme radio choices. All three choices update their native checked state; Print invokes the browser print handler (observed using a test-browser spy, not an OS printer). Developer actions/toggles are absent; zero page errors/external browser requests and no horizontal overflow. The passive Streamlit version footer remains. The judge desktop screenshot was visually inspected.
+
+Actual Record start/countdown/stop/preview/download passed using Chromium's built-in **synthetic screen capture** flags (`--use-fake-device-for-media-stream`, `--use-fake-ui-for-media-stream`, `--auto-select-desktop-capture-source=Entire screen`, `--allow-http-screen-capture`). No personal desktop or microphone was captured. The preview decoded **1280×720**, ready state **4**; downloaded WebM is **12,532 bytes** with a valid EBML signature. Evidence: ignored `browser.json`, screenshots, `recording.json`, `recording-preview.png` and `screen-recording.webm` under `.runtime/cca009-toolbar-verification/`, alongside the temporary trusted browser helpers and HTTP smoke JSON.
+
+Initial browser harness expected the older Settings menu; the installed version instead has direct theme choices. That assertion was corrected without changing application code. Native desktop/tab chooser attempts could not complete unattended in headless Chromium; synthetic capture resolved that environment limitation. One recording harness attempt pressed Escape with the menu open, which dismissed the menu without opening the video preview; the final check uses the visible Stop recording action and Save video to disk button.
+
+TOML parse and preservation of the existing CRLF files passed; final whitespace/diff review passed. **Not run:** full pytest (configuration/docs-only change; actual Docker/browser checks used), live model/contestant execution, user OS screen-share permission/manual microphone recording, physical printing, other browsers/platforms and hosted deployment. No commit/push was performed for this follow-up.
+
+## 2026-10-18 — CCA-008 correction: temporary browser-session drafts, no resume
+
+Authorization: the user explicitly rejected cross-session workflow recovery and requested deleting the temporary task when the session breaks, the page is left or the browser closes. This supersedes the earlier CCA-008 fresh-session resume requirement/evidence; existing human approval checkpoints remain only inside the active session. The preceding CCA-009 toolbar changes remain intact and uncommitted. No new story/release, dependency, provider/worker transport or model execution permission was added.
+
+### Implementation and cleanup boundary
+
+Removed the Resume expander, ID input/button and displayed private recovery ID. A new thread-safe `AuthoringSession`, stored with native Streamlit 1.66 `st.cache_resource(scope="session", on_release=...)`, owns the private creation ID and temporary request/preview/ZIP dictionaries. Native WebSocket disconnect invokes cleanup independently of a browser unload request. Workspace exit also explicitly closes it; reconnect/rebinding clears all authoring widget state, including model/topic/instructions/difficulty/reference opt-in. The config disables retained disconnected sessions (`server.disconnectedSessionTTL = 0`). The UI now offers Refresh draft only for uncertain HTTP responses within a still-connected session, and Discard draft and start over.
+
+DELETE is idempotent and remains available during generation/review. It immediately removes the workflow from the store and retires its ID, even when deletion arrives before the creation POST. A late generation result cannot recreate the workflow: later graph work is blocked and pending checkpoints/previews are cleared on operation exit. The bounded retired-ID ledger prevents replay without retaining task contents. Teacher approval, revision/call limits, private/student package validation and sandbox-only reference execution keep their prior contracts.
+
+Real browser checking exposed native Streamlit media retention: clearing API/checkpoint/private dictionaries alone left old ZIP URLs returning 200. A small version-specific adapter captures the current session ID/media manager and releases its file references with both native mark/delete cleanup passes. Other active session references are preserved. The final test confirms old ZIP URLs return 404. The adapter must be checked when upgrading the pinned Streamlit version. See [Streamlit session resource lifecycle](https://docs.streamlit.io/develop/api-reference/caching-and-state/st.cache_resource) and the installed 1.66.0 runtime/media-manager source.
+
+Cleanup follows server detection of a disconnect; silent network loss first requires normal Streamlit connection detection. An already-started bounded provider/worker operation may finish but its result is discarded, with no automatic retry/new model call. Cleanup attempts only idempotent local DELETE, up to twice per invocation; an unreachable API logs a generic warning without IDs/content. Immediate deletion after a web-process crash or unreachable API is not guaranteed; process-local expiry/restart remains a fallback. Already downloaded files on the teacher's device cannot be recalled. No live provider/reference execution is claimed.
+
+### Commands, tests and browser proof
+
+Same observed WSL2/CPython 3.12.13/Streamlit 1.66.0/FastAPI 0.143.3/LangGraph 1.2.16 and pinned temporary tooling as above. TestClient/AppTest use the existing authorized host path; actual providers/workers remain mocked. Exact commands:
+
+```bash
+/tmp/cca006-venv/bin/pytest -q tests/test_authoring_ui.py tests/test_authoring_workflow.py tests/test_workflow_api.py tests/test_package_api.py
+/tmp/cca006-venv/bin/pytest -q tests/test_authoring_session.py tests/test_authoring_ui.py tests/test_workflow_api.py tests/test_authoring_workflow.py tests/test_package_api.py
+/tmp/cca006-venv/bin/pytest -q tests/test_authoring_ui.py tests/test_authoring_session.py
+/tmp/cca006-venv/bin/pytest -q
+/tmp/cca006-venv/bin/ruff check .
+/tmp/cca006-venv/bin/ruff format --check .
+/home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin/node --check scripts/verify_authoring_ui.cjs
+LD_LIBRARY_PATH=/tmp/type-nudge-linux-deps/extracted/usr/lib/x86_64-linux-gnu CCA_BROWSER_NODE=/home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin/node CCA_PLAYWRIGHT_MODULE=/tmp/cca008-browser/node_modules/playwright CCA_BROWSER_EXECUTABLE=/home/zsolti-wsl/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome /tmp/cca006-venv/bin/python scripts/verify_authoring_ui.py --output .runtime/cca008-session-cleanup-final
+docker compose -f compose.yaml config --quiet
+docker compose -f compose.yaml up -d --build --wait --wait-timeout 120
+/tmp/cca006-venv/bin/python scripts/verify_docker_app.py --output .runtime/cca008-session-docker
+/tmp/cca006-venv/bin/python /tmp/cca008-audit-runtime.py
+LD_LIBRARY_PATH=/tmp/type-nudge-linux-deps/extracted/usr/lib/x86_64-linux-gnu /home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin/node /tmp/cca008-session-docker.cjs
+git -c core.whitespace=cr-at-eol diff HEAD --check
+```
+
+Focused checks passed **85 in 10.07s**, then **87 in 10.60s** after the native-media fix. Final UI/session checks, including full form reset, passed **21 in 8.80s**. Final full suite: **550 passed in 32.29s**, no warnings (eight new regressions over prior 542). Earlier full runs before the final form-reset case passed 549 in 31.38s and 32.57s. Ruff passed; **92 files already formatted**; JS syntax/whitespace checks passed. Tests cover deletion during generation, tombstone-before-create, no late preview/checkpoint resurrection, cleanup during a busy authoring slot, private data invalidation, deletion-only retry/error redaction, approved package cleanup, reconnect reset and workspace exit.
+
+Actual local browser fixture harness exited 0 with Chromium **151.0.7922.34**, Playwright **1.61.1**, **1440×1000** desktop / **390×844** mobile. It exercises revision/approval/rejection, separate ZIP/PDF downloads, missing resume/ID controls in a fresh page, tab close after approval, workspace exit, navigation to another page and full browser closure. A second observer browser confirms deletion after closing the first browser. Final API state: **zero workflows, zero retained checkpoints, zero retained previews**. Both old native ZIP URLs and closed workflow API/export paths return **404**. **Seven fixed mocked generation attempts**, zero real provider/worker/source executions, zero page errors/external browser requests. ZIP audience validation/Hungarian PDF extraction passed; hashes match prior unchanged synthetic exports. Codex visually inspected the initial desktop form without Resume. Evidence stays ignored under `.runtime/cca008-session-cleanup-final/`.
+
+The first browser run covered lifecycle cleanup successfully; adding native download URL checking then correctly failed (200 instead of 404), leading to the media-manager fix. The final successful directory contains the corrected proof. Previous failed/intermediate evidence remains separate under `.runtime/cca008-session-cleanup-downloads/` and `.runtime/cca008-session-cleanup/`.
+
+### Docker refresh, review and remaining limits
+
+The socket-free default Compose was rebuilt/recreated from current source; both services healthy. Runtime UI/API checks and installed-source/config audit are recorded under `.runtime/cca008-session-docker/`. Real configured Docker startup/catalog/browser checks make no generation call; full synthetic lifecycle/ZIP proof uses the separate real local fixture services above. CCA-009 integrated worker activation remains pending its existing separate approval; this follow-up does not enable a socket or execute contestant code.
+
+The new source/test files carry the exact short SPDX headers. Existing line endings and the earlier toolbar edits were preserved; no staged paths/commit/push. Local setup, workflow contracts, release README/story, main README and AGENTS status describe the corrected session lifetime. **Not run:** live/paid model generation, real reference/contestant execution, worker activation, hard web-process crash/unreachable-API cleanup guarantee, silent network timeout timing, other browsers/OS/architectures, physical printing, hosted CI/public deployment or external publication.
+
+Final Docker audit: both API and web contain all **27 application Python files** with SHA-256 bytes matching the tested checkout; both report `viewer`, zero disconnected-session retention and no daemon socket. Runtime image: `sha256:55c1a2c08d4a40e8701fab17eec938ace45d79bea65f42b66756e6a4fe79f631` (web), `sha256:55c1a2c08d4a40e8701fab17eec938ace45d79bea65f42b66756e6a4fe79f631` (API). Final HTTP/browser smoke repeated successfully: five model choices without issues, valid/invalid uploads and disabled judge; no Resume/ID controls, retained native themes/Print/Record menu, no page errors/external requests or horizontal overflow. Review covered **20 intended paths**, **73 resolving local Markdown links**, exact new SPDX headers, preserved line endings, no local key values in changed/new files and an empty index. No commit/push.
+
+### Fix commit authorization and review
+
+The user subsequently explicitly authorized committing these follow-ups as a **fix**. The reviewed 20-path scope includes the earlier CCA-009 toolbar cleanup and CCA-008 session-lifetime correction, their regression/browser checks and documentation. The unchanged application source retains the preceding full **550 passed** result; full pytest was not repeated solely for the commit. Ruff, formatting, JavaScript syntax and whitespace checks passed again. Before staging, the empty index, exact intended paths, preserved line endings, local links, short SPDX headers, ignored runtime/.env files and absence of real local key values were checked. Staged blobs are compared to the reviewed normalized bytes before the fix commit. No push is authorized; integrated judge activation remains pending its existing separate approval.

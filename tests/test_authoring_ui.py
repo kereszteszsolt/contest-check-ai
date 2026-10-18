@@ -58,7 +58,10 @@ def authoring_page(client, monkeypatch):
     page = AppTest.from_file(APP_PATH, default_timeout=20).run()
     page.sidebar.radio[0].set_value("AI task draft").run()
     assert not page.exception
-    return page, calls, request
+    yield page, calls, request
+    import streamlit as st
+
+    st.cache_resource.clear()
 
 
 def generate(page):
@@ -125,7 +128,7 @@ def test_real_checkpoint_revision_approval_and_separate_private_downloads(author
         assert archive.read("teacher/reference/main.py") == b"# INERT_REFERENCE\n"
     assert len(client.workflow_calls) == 2
     assert sum(path.endswith("/review") for _, path, _ in calls) == 2
-    button(page, "Delete workflow and start over").click().run()
+    button(page, "Discard draft and start over").click().run()
     assert not page.get("download_button") and page.selectbox[0].value is None
 
 
@@ -136,7 +139,7 @@ def test_rejection_produces_no_downloads_or_additional_model_calls(authoring_pag
     assert not page.exception
     assert page.session_state["authoring_preview"]["state"]["status"] == "rejected"
     assert not page.get("download_button") and len(client.workflow_calls) == 1
-    button(page, "Refresh workflow").click().run()
+    button(page, "Refresh draft").click().run()
     assert not page.get("download_button") and len(client.workflow_calls) == 1
 
 
@@ -173,7 +176,7 @@ def test_lost_response_requires_read_only_recovery(
     assert not page.get("download_button")
     calls = len(client.workflow_calls)
     page.run()  # rerun never repeats the uncertain POST
-    button(page, "Refresh workflow").click().run()
+    button(page, "Refresh draft").click().run()
     assert not page.exception and len(client.workflow_calls) == calls
     expected = "approved" if uncertain_action == "approve" else "awaiting_review"
     assert page.session_state["authoring_preview"]["state"]["status"] == expected
@@ -274,7 +277,7 @@ def test_invalid_preview_disables_decisions_until_refresh(
     generate(page)
     assert page.error and "PRIVATE" not in page.error[0].value
     assert not any(item.label == "Approve draft" for item in page.button)
-    button(page, "Refresh workflow").click().run()
+    button(page, "Refresh draft").click().run()
     assert not page.exception and button(page, "Approve draft").disabled
     assert len(client.workflow_calls) == 1
 
@@ -333,3 +336,59 @@ def test_delayed_approval_click_from_previous_checkpoint_cannot_approve_revision
     assert not page.exception
     assert page.session_state["authoring_preview"]["state"]["status"] == "awaiting_review"
     assert len(client.workflow_calls) == 2 and not page.get("download_button")
+
+
+def test_workspace_exit_deletes_approved_draft_and_cached_packages(authoring_page, client):
+    page, _, _ = authoring_page
+    generate(page)
+    approve(page)
+    button(page, "Prepare separate ZIP downloads").click().run()
+    workflow_id = page.session_state["authoring_workflow_id"]
+    preview = page.session_state["authoring_preview"]
+    packages = page.session_state["authoring_packages"][1]
+    page.sidebar.radio[0].set_value("Judge submissions").run()
+    assert not page.exception
+    assert client.get(f"/api/authoring/workflows/{workflow_id}").status_code == 404
+    assert preview == {} and packages == {}
+    assert "authoring_workflow_id" not in page.session_state
+    page.sidebar.radio[0].set_value("AI task draft").run()
+    assert not page.exception and button(page, "Generate draft").disabled
+    assert not page.get("download_button")
+    assert not any("Resume" in item.label for item in page.button)
+    assert not any("workflow ID" in item.label for item in page.text_input)
+    assert len(client.workflow_calls) == 1
+
+
+def test_released_session_cannot_redisplay_old_preview_or_downloads(authoring_page, client):
+    import streamlit as st
+
+    page, _, _ = authoring_page
+    generate(page)
+    workflow_id = page.session_state["authoring_workflow_id"]
+    old_session = page.session_state["authoring_resource"]
+    st.cache_resource.clear()  # Same release callback as a Streamlit WebSocket disconnect.
+    assert old_session.closed
+    assert client.get(f"/api/authoring/workflows/{workflow_id}").status_code == 404
+    page.run()  # Even a reconnect with old Streamlit widget state starts empty.
+    assert not page.exception
+    assert "authoring_workflow_id" not in page.session_state
+    assert page.session_state["authoring_resource"] is not old_session
+    assert not page.get("download_button") and len(client.workflow_calls) == 1
+
+
+def test_new_session_resets_instructions_model_difficulty_and_reference_opt_in(authoring_page):
+    import streamlit as st
+
+    page, calls, _ = authoring_page
+    page.selectbox[0].set_value("ollama:1").run()
+    page.selectbox[1].set_value("advanced").run()
+    text_input(page, "Topic").set_value("private unfinished topic").run()
+    page.text_area[0].set_value("private unfinished instructions").run()
+    checkbox(page, "Request isolated").check().run()
+    st.cache_resource.clear()
+    page.run()
+    assert not page.exception
+    assert page.selectbox[0].value is None and page.selectbox[1].value == "beginner"
+    assert text_input(page, "Topic").value == "" and page.text_area[0].value == ""
+    assert not checkbox(page, "Request isolated").value
+    assert not any(method == "POST" for method, _, _ in calls)

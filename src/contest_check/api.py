@@ -289,7 +289,7 @@ async def create_authoring_workflow(
         try:
             return await workflow.start()
         except BaseException:
-            store.delete(workflow.workflow_id)
+            store.discard(workflow.workflow_id)
             raise
     finally:
         if judge_acquired:
@@ -340,13 +340,8 @@ def delete_authoring_workflow(
     workflow_id: OpaqueID,
     store: Annotated[WorkflowStore, Depends(get_workflow_store)],
 ):
-    if not AUTHORING_SLOT.acquire(blocking=False):
-        raise WorkflowFailure("workflow_busy")
-    try:
-        store.delete(workflow_id)
-        return Response(status_code=204, headers={"Cache-Control": "no-store"})
-    finally:
-        AUTHORING_SLOT.release()
+    store.discard(workflow_id)
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})
 
 
 @app.post("/api/authoring/workflows/{workflow_id}/packages/{audience}", response_class=Response)

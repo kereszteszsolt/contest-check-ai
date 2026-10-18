@@ -278,3 +278,27 @@ def test_retired_creation_ids_are_bounded_and_expire(client, monkeypatch):
     assert client.post(ROOT, json=REQUEST).status_code == 503
     client.workflow_store.used_ids[first["workflow_id"]] -= module.WORKFLOW_TTL_SECONDS + 1
     assert client.post(ROOT, json=REQUEST).status_code == 200
+
+
+def test_cleanup_retires_a_creation_id_before_the_create_request_arrives(client):
+    creation_id = "ab" * 16
+    path = f"{ROOT}/{creation_id}"
+    assert client.delete(path).status_code == 204
+    assert client.delete(path).status_code == 204
+    assert client.get(path).status_code == 404
+    response = client.post(ROOT, json=REQUEST, headers={"Idempotency-Key": creation_id})
+    assert response.status_code == 404 and response.json()["code"] == "workflow_missing"
+    assert not client.workflow_calls
+
+
+def test_cleanup_is_allowed_while_authoring_slot_is_busy(client):
+    preview = client.post(ROOT, json=REQUEST).json()
+    path = f"{ROOT}/{preview['workflow_id']}"
+    assert AUTHORING_SLOT.acquire(blocking=False)
+    try:
+        assert client.delete(path).status_code == 204
+        assert client.get(path).status_code == 404
+    finally:
+        AUTHORING_SLOT.release()
+    assert client.post(path + "/packages/student", json={}).status_code == 404
+    assert len(client.workflow_calls) == 1

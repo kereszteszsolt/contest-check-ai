@@ -335,3 +335,38 @@ def test_store_capacity_expiry_and_deletion_clear_checkpoint(generation, monkeyp
     assert caught.value.code == "workflow_missing"
     assert not list(run.checkpointer.list(run.config))
     assert store.create(run.request, settings).workflow_id != run.workflow_id
+
+
+def test_discard_during_generation_retires_id_and_clears_late_checkpoints(generation, monkeypatch):
+    store = WorkflowStore()
+    settings = load_model_settings({"OLLAMA_MODEL_1": "fixture:1"})
+    run = store.create(workflow().request, settings)
+    original = run.session.generate
+
+    async def scenario():
+        entered, release = asyncio.Event(), asyncio.Event()
+
+        async def delayed(*args, **kwargs):
+            entered.set()
+            await release.wait()
+            return await original(*args, **kwargs)
+
+        monkeypatch.setattr(run.session, "generate", delayed)
+        task = asyncio.create_task(run.start())
+        await entered.wait()
+        store.discard(run.workflow_id)
+        with pytest.raises(WorkflowFailure) as caught:
+            store.get(run.workflow_id)
+        assert caught.value.code == "workflow_missing"
+        with pytest.raises(WorkflowFailure) as caught:
+            store.existing_creation(run.workflow_id, run.request)
+        assert caught.value.code == "workflow_missing"
+        release.set()
+        with pytest.raises(WorkflowFailure) as caught:
+            await task
+        assert caught.value.code == "workflow_missing"
+        assert run.view is None and not list(run.checkpointer.list(run.config))
+        assert run.tool_calls == 0 and run.reference_runs == 0
+        assert len(generation) == 1
+
+    asyncio.run(scenario())

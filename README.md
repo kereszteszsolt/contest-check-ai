@@ -87,7 +87,7 @@ The initial checker uses a documented text comparison rule for file-based I/O. R
 | Documents & exports | **ReportLab** PDF, **XlsxWriter** XLSX, standard ZIP archives; **pypdf/openpyxl** are test readers |
 | Tests | **pytest**, isolated security/runner integration checks |
 | Deployment | Native setup or local **Docker Compose UI/API**; optional trusted API judge override; separate offline one-shot worker |
-| Database | **No application database** — temporary judge workspaces; bounded process-local `InMemorySaver` authoring checkpoints (one hour, lost on restart) |
+| Database | **No application database** — temporary judge workspaces; session-bound process-local `InMemorySaver` authoring checkpoints (deleted on UI disconnect/workspace exit; at most one hour, lost on restart) |
 
 Python dependencies are pinned in `pyproject.toml` and `uv.lock`; see the [dependency license inventory](docs/dependency-licenses.md). The [CCA-002 worker guide](docs/judge-worker.md) documents the pinned NsJail/Kafel build, reviewed Docker profile, Linux host requirements and actual integration evidence. It is a separate one-shot service, with no public worker endpoint.
 
