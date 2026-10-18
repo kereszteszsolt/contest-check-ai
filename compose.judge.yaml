@@ -8,6 +8,7 @@ services:
     environment:
       JUDGE_EXECUTION_ENABLED: "true"
       JUDGE_REVIEWED_PROFILE: "true"
+      JUDGE_COMPOSE_PROJECT: ${COMPOSE_PROJECT_NAME}
     group_add:
       - "${DOCKER_GID:?Set DOCKER_GID to the local docker.sock group ID before enabling judge mode}"
     volumes:

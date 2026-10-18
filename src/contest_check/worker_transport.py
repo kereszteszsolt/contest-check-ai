@@ -4,6 +4,7 @@
 """Local operator transport. Only a fixed, hardened worker command is launched."""
 
 import os
+import re
 import selectors
 import shutil
 import subprocess
@@ -27,6 +28,12 @@ def configured() -> bool:
     )
 
 
+def worker_project() -> str:
+    # Operator metadata only; never derive labels/names from uploaded task data.
+    project = os.environ.get("JUDGE_COMPOSE_PROJECT", "contest-check-ai")
+    return project if re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,62}", project) else "contest-check-ai"
+
+
 def worker_command(docker: str, name: str) -> list[str]:
     return [
         docker,
@@ -37,6 +44,10 @@ def worker_command(docker: str, name: str) -> list[str]:
         "--interactive",
         "--name",
         name,
+        # Desktop excludes oneoff=True containers from the project group.
+        "--label=com.docker.compose.project=" + worker_project(),
+        "--label=com.docker.compose.service=judge-worker",
+        "--label=net.kereszteszsolt.contest-check.role=judge-worker",
         "--network=none",
         "--read-only",
         "--user=1000:1000",
@@ -101,7 +112,7 @@ class DockerWorker:
         docker = shutil.which("docker")
         if docker is None:
             return RuntimeResult(status="system_error", diagnostic="worker_transport")
-        name = "cca-judge-" + uuid.uuid4().hex
+        name = worker_project() + "-judge-worker-" + uuid.uuid4().hex
         command = worker_command(docker, name)
         process = None
         result = RuntimeResult(status="system_error", diagnostic="worker_transport")

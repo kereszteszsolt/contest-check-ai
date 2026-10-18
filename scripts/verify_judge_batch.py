@@ -119,7 +119,15 @@ def main():
             "host_binds": host.get("Binds") or [],
         }
         before = command(
-            [*DOCKER, "ps", "--all", "--filter", "name=cca-judge-", "--format", "{{.Names}}"]
+            [
+                *DOCKER,
+                "ps",
+                "--all",
+                "--filter",
+                "label=net.kereszteszsolt.contest-check.role=judge-worker",
+                "--format",
+                "{{.Names}}",
+            ]
         )
         assert before.returncode == 0
         task, submissions = fixtures()
@@ -175,7 +183,15 @@ def main():
         assert dq["findings"][0]["observed_bytes"] == 1025
         assert "source_files" not in response.text and "output_base64" not in response.text
         after = command(
-            [*DOCKER, "ps", "--all", "--filter", "name=cca-judge-", "--format", "{{.Names}}"]
+            [
+                *DOCKER,
+                "ps",
+                "--all",
+                "--filter",
+                "label=net.kereszteszsolt.contest-check.role=judge-worker",
+                "--format",
+                "{{.Names}}",
+            ]
         )
         assert after.returncode == 0
         assert set(after.stdout.splitlines()) <= set(before.stdout.splitlines())

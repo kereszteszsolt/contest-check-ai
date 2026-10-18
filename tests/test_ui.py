@@ -13,6 +13,19 @@ from contest_check.ui import local_api_url
 APP_PATH = Path(__file__).resolve().parents[1] / "streamlit_app.py"
 
 
+@pytest.fixture(autouse=True)
+def judge_health(monkeypatch):
+    def get(client, path, **kwargs):
+        assert path == "/health"
+        return httpx.Response(
+            200,
+            json={"status": "ok", "execution_enabled": True},
+            request=httpx.Request("GET", str(client.base_url.join(path))),
+        )
+
+    monkeypatch.setattr(httpx.Client, "get", get)
+
+
 def test_api_address_can_change_port_but_stays_on_loopback(monkeypatch):
     monkeypatch.setenv("API_PORT", "18000")
     assert local_api_url() == "http://127.0.0.1:18000"
@@ -231,3 +244,70 @@ def test_invalid_download_bytes_never_become_a_download(judging_page, monkeypatc
     assert not page.exception and page.error
     assert page.session_state["reports"] == {} and len(page.get("download_button")) == 0
     assert "PRIVATE" not in page.error[0].value
+
+
+@pytest.mark.parametrize(
+    "status,body",
+    [
+        (200, {"status": "ok", "execution_enabled": False}),
+        (200, {"status": "ok", "execution_enabled": "true"}),
+        (200, {"status": "ok", "execution_enabled": 1}),
+        (200, {"status": "ok"}),
+        (200, {"status": "error", "execution_enabled": True}),
+        (200, []),
+        (503, {"status": "ok", "execution_enabled": True}),
+    ],
+)
+def test_disabled_or_unconfirmed_judge_cannot_run_validated_uploads(
+    judging_page, monkeypatch, status, body
+):
+    monkeypatch.setattr(
+        httpx.Client,
+        "get",
+        lambda *a, **k: httpx.Response(
+            status, json=body, request=httpx.Request("GET", "http://127.0.0.1/health")
+        ),
+    )
+    page = judging_page.run()
+    assert not page.exception
+    assert page.session_state["validation_status"] == "validated"
+    assert page.button[1].disabled
+    assert any("execution is disabled" in item.value for item in page.info) or page.warning
+    assert not page.session_state["reports"]
+
+
+def test_offline_judge_has_safe_message_and_recovers(judging_page, monkeypatch):
+    def unavailable(*args, **kwargs):
+        raise httpx.ConnectError("PRIVATE_CONNECTION_DETAILS")
+
+    monkeypatch.setattr(httpx.Client, "get", unavailable)
+    page = judging_page.run()
+    assert not page.exception and page.button[1].disabled
+    assert "Cannot confirm" in page.warning[0].value
+    assert "PRIVATE" not in page.warning[0].value
+    monkeypatch.setattr(
+        httpx.Client,
+        "get",
+        lambda *a, **k: httpx.Response(
+            200,
+            json={"status": "ok", "execution_enabled": True},
+            request=httpx.Request("GET", "http://127.0.0.1/health"),
+        ),
+    )
+    page.run()
+    assert not page.exception and not page.button[1].disabled
+
+
+def test_compose_api_address_uses_only_the_fixed_service_name(monkeypatch):
+    monkeypatch.setenv("API_HOST", "api")
+    monkeypatch.setenv("API_PORT", "8000")
+    assert local_api_url() == "http://api:8000"
+
+
+@pytest.mark.parametrize(
+    "host", ["example.com", "api/path", "api@evil.invalid", "127.0.0.1:80", ""]
+)
+def test_api_address_rejects_arbitrary_hosts(monkeypatch, host):
+    monkeypatch.setenv("API_HOST", host)
+    with pytest.raises(ValueError):
+        local_api_url()

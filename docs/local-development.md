@@ -16,9 +16,9 @@ uv run --frozen uvicorn contest_check.api:app --host 127.0.0.1 --port 8000 --lim
 uv run --frozen streamlit run streamlit_app.py --server.port 8501
 ```
 
-Open <http://127.0.0.1:8501>. The UI calls the local API on port 8000. Streamlit binds to loopback, limits each file upload to 10 MiB and disables usage telemetry through `.streamlit/config.toml`. Its `client.toolbarMode = "viewer"` setting hides developer controls, including the Deploy button, in both native and Docker runs; the native System/Light/Dark theme choices, Print and browser-supported Record screen remain available. The app does not load `.env`. API judging is disabled by default; setting only `JUDGE_EXECUTION_ENABLED=true` is insufficient. Follow [judging.md](judging.md) to build/qualify the worker and explicitly configure both operator settings. After validation, the UI enables Run solutions; an unconfigured API refuses judging with a clear error. Review results, select Prepare PDF and XLSX and download the reports. The [UI/export contract](verdicts-and-reporting.md) explains state resets, N/A metrics and limits.
+Open <http://127.0.0.1:8501>. The UI calls the local API on port 8000. Streamlit binds to loopback, limits each file upload to 10 MiB and disables usage telemetry through `.streamlit/config.toml`. Its `client.toolbarMode = "viewer"` setting hides developer controls, including the Deploy button, in both native and Docker runs; the native System/Light/Dark theme choices, Print and browser-supported Record screen remain available. The app does not load `.env`. API judging is disabled by default; setting only `JUDGE_EXECUTION_ENABLED=true` is insufficient. Follow [judging.md](judging.md) to build/qualify the worker and explicitly configure both operator settings. After validation, Run solutions is enabled only when the API also reports that isolated judging is configured. Disabled or unreachable API status keeps the button disabled with a visible explanation. The API still independently enforces its execution gate and each worker must qualify. Review results, select Prepare PDF and XLSX and download the reports. The [UI/export contract](verdicts-and-reporting.md) explains state resets, N/A metrics and limits.
 
-If port 8000 is occupied, use another local port for both processes. For example, start the API with `--port 18000`, and start the UI with `API_PORT=18000 uv run --frozen streamlit run streamlit_app.py --server.port 8501`. The UI accepts only a port number and always connects to `127.0.0.1`; no arbitrary API URL is accepted. `API_PORT` must be exported or provided on the command line; merely editing `.env` does not configure it.
+If port 8000 is occupied, use another local port for both processes. For example, start the API with `--port 18000`, and start the UI with `API_PORT=18000 uv run --frozen streamlit run streamlit_app.py --server.port 8501`. Native UI defaults to `127.0.0.1`. Docker sets the fixed `API_HOST=api` service alias; these are the only accepted hosts, and no arbitrary API URL is accepted. `API_PORT` must be exported or provided on the command line; merely editing `.env` does not configure it.
 
 Generate two known, inert example archives, then upload them using the UI or API:
 
@@ -69,18 +69,18 @@ The harness needs separately installed Node/Playwright/Chromium; it starts real 
 
 The root `compose.yaml` builds Streamlit and FastAPI using the exact Python 3.12.13 / uv 0.11.29 image digests and existing lockfile. It uses separate non-root, read-only containers with bounded CPU/memory/processes and temporary scratch storage. The worker-specific build context is unchanged. The application Dockerfile has its own allowlist so `.env`, `.git`, uploads, runtime artifacts and local virtual environments never enter the build context/image.
 
-From the repository root, create `.env` from `.env.example` only if it does not already exist; retain existing provider credentials/settings. Unlike native Python startup, **Docker Compose reads the root `.env` for interpolation**. Only explicitly listed provider settings/keys go to API; web receives only its internal API port. No model request occurs during startup or catalog/health lookup.
+From the repository root, create `.env` from `.env.example` only if it does not already exist; retain existing provider credentials/settings. Unlike native Python startup, **Docker Compose reads the root `.env` for interpolation**. Only explicitly listed provider settings/keys go to API; web receives only its fixed internal API host/port. No model request occurs during startup or catalog/health lookup.
 
 ```bash
 docker compose config --quiet
 docker compose up -d --build --wait
 docker compose ps
-curl --fail http://127.0.0.1:8000/health
+curl --fail http://127.0.0.1:43872/health
 ```
 
-Open <http://127.0.0.1:8501>. `APP_PORT` and `API_PORT` in `.env` change the two published host ports; container ports remain 8501/8000. Both published ports bind only to `127.0.0.1`. Web shares API's Docker network namespace (`network_mode: service:api`) so the existing UI always calls `127.0.0.1:8000`; their filesystems, process namespaces and environment remain separate. Port mappings therefore appear on the API container. Compose manages both services together.
+Open <http://127.0.0.1:43871>. The project defaults are `APP_PORT=43871` (web) and `API_PORT=43872` (API). Both were available on the reviewed host; no fixed port can guarantee availability on another machine. Existing `.env` files override these defaults, so update both entries when migrating. Container ports remain 8501/8000. Both published ports bind only to `127.0.0.1`. Web and API have separate network namespaces on the project bridge; web calls only `http://api:8000`. Web publishes only 43871→8501, API only 43872→8000, and the worker publishes no ports. The shared image advertises no additional unused ports. All three service containers belong to the same Compose project.
 
-**Default mode intentionally returns `execution_enabled: false`.** Validation, authoring/catalog/review and packaging work without a Docker socket. Run solutions is refused; requested reference checks remain blocked. This default cannot execute a submission even if the root `.env` contains judge flags. The explicit judge override below is required. No Docker-in-Docker daemon or worker network server is added.
+**Default mode intentionally returns `execution_enabled: false`.** Validation, authoring/catalog/review and packaging work without a Docker socket. Run solutions is disabled in the UI; direct API execution is refused and requested reference checks remain blocked. This default cannot execute a submission even if the root `.env` contains judge flags. The explicit judge override below is required. No Docker-in-Docker daemon or worker network server is added.
 
 To stop/restart default mode:
 
@@ -103,7 +103,7 @@ docker compose -f deploy/worker/compose.yaml -f deploy/worker/compose.reviewed.y
 stat -c '%g' /var/run/docker.sock
 ```
 
-Set `DOCKER_GID` in the ignored root `.env` to the last command's number. After reviewing and approving the trusted API socket exposure:
+Set `DOCKER_GID` in the ignored root `.env` to the last command's number; recheck it after Docker/WSL changes rather than reusing an old value. After reviewing and approving the trusted API socket exposure:
 
 ```bash
 docker compose -f compose.yaml -f compose.judge.yaml config --quiet
@@ -112,7 +112,23 @@ docker compose -f compose.yaml -f compose.judge.yaml up -d --build --wait
 
 Use this same file pair for subsequent updates/restarts. The override selects the `judge-api` image target with a digest-pinned Docker CLI 29.6.1 and the exact reviewed seccomp profile at the installed package's fixed lookup path; no application-source change or user-supplied profile/command is introduced. No host checkout/uploads are mounted. The socket bind refuses to create a missing host path. `/health` reports the operator flags, **not qualification**. Every program/test still creates a fresh Linux worker with no network, host mounts, socket or model environment and must pass all real NsJail startup checks in that process. The API never imports/executes contestant/reference source. Failed qualification/cleanup stops execution; no host or plain-container fallback exists.
 
-The current local judge-enabled startup is **awaiting explicit approval**: automatic approval review rejected the API socket exposure. The optional image builds and worker qualification pass; an API-container-to-worker execution result is not yet claimed. See [CCA-009](releases/release-0.2-ai-challenge-authoring/stories/CCA-009-local-docker-deployment.md) and [observed evidence](releases/release-0.2-ai-challenge-authoring/verification.md).
+The local judge-enabled deployment was **explicitly approved and verified on 2026-10-18**, resolving the earlier automatic approval rejection of API socket access. Real benign API-to-worker judging, PDF/XLSX export and cleanup passed. Use the same two-file Compose command for updates; running base `compose.yaml` alone restores disabled execution. This authorization/evidence applies to this local deployment, not public hosting or a different host. See [CCA-009](releases/release-0.2-ai-challenge-authoring/stories/CCA-009-local-docker-deployment.md) and [observed evidence](releases/release-0.2-ai-challenge-authoring/verification.md).
+
+### Worker visibility
+
+The root project always contains **web**, **api** and **judge-worker**, including when judging is disabled. The named `judge-worker` service uses the real offline worker image: it performs `--check` once at startup, reports prerequisites in its logs and remains visible as **Exited (0)**. API startup waits for that successful prerequisite check. A failed check retains a nonzero stopped container for diagnosis and blocks startup. No submitted/reference source is run by this service, and its check is not a reusable qualification token. `docker compose ps --all` includes the stopped service. In Docker Desktop, keep **Only show running containers** off to see stopped containers. Normal `stop` retains it; `down` removes the project's containers.
+
+During judging or opted-in reference checks, the API still creates a fresh `<project>-judge-worker-<random ID>` for each test and removes it afterward. Each process runs all sandbox qualification probes before executing code. The stopped service stays visible between these jobs. The operator's Compose project name is passed through `JUDGE_COMPOSE_PROJECT`, including custom `-p` names; invalid metadata falls back to `contest-check-ai`. Uploaded data never enters names or labels.
+
+Job containers carry Compose project/service labels and `net.kereszteszsolt.contest-check.role=judge-worker`. They intentionally omit `com.docker.compose.oneoff=True`: the installed Docker Desktop excludes that marker from project grouping. The previous marker was a display bug, now corrected. Labels do not control execution lifetime; exact-name cleanup still removes each job. The managed stopped service has Compose's normal labels and no job-role marker, so job cleanup never selects it.
+
+```bash
+docker compose -f compose.yaml -f compose.judge.yaml ps --all
+docker ps --filter label=com.docker.compose.project=contest-check-ai \
+  --filter label=net.kereszteszsolt.contest-check.role=judge-worker
+```
+
+The second command lists only active job containers. During AI generation the API first waits for a valid model response; reference workers start afterward if **Request isolated reference checks** is selected. A model/validation failure can prevent that stage entirely. No persistent background process, extra worker network, socket, credentials or artificial sleep is added.
 
 ### Operator verification
 
@@ -122,6 +138,6 @@ uv run --frozen python scripts/verify_docker_app.py
 uv run --frozen python scripts/verify_docker_app.py --reviewed-profile
 ```
 
-This optional operator script uses fixed benign CCA-003 fixtures and a loopback API only. Without the explicit flag it never submits executable fixtures to an enabled judge. In default mode it checks health, catalog, valid/invalid archives and the expected 503 execution-disabled response. In enabled mode it checks observed AC/WA/TLE/RE, objective DQ/REVIEW and PDF/XLSX exports through the actual running API. It never calls a model or runs program source on the host. It is not run by pytest/CI.
+This optional operator script defaults to the Docker host ports 43872/43871; pass `--api-port` and `--web-port` for overrides or native services. It uses fixed benign CCA-003 fixtures and a loopback API only. Without the explicit flag it never submits executable fixtures to an enabled judge. In default mode it checks health, catalog, valid/invalid archives and the expected 503 execution-disabled response. In enabled mode it checks observed AC/WA/TLE/RE, objective DQ/REVIEW and PDF/XLSX exports through the actual running API. It never calls a model or runs program source on the host. It is not run by pytest/CI.
 
 Docker/uv references: [Compose networking](https://docs.docker.com/compose/how-tos/networking/), [Dockerfile-specific context allowlists](https://docs.docker.com/build/concepts/context/#dockerignore-files), [uv multi-stage locked installs](https://docs.astral.sh/uv/guides/integration/docker/).

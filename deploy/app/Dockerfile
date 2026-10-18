@@ -22,7 +22,6 @@ COPY --from=build /app/.venv /app/.venv
 COPY streamlit_app.py LICENSE ./
 COPY .streamlit/config.toml ./.streamlit/config.toml
 USER 1000:1000
-EXPOSE 8000 8501
 CMD ["uvicorn", "contest_check.api:app", "--host", "0.0.0.0", "--port", "8000", "--limit-concurrency", "4"]
 
 # Only the explicitly enabled trusted coordinator gets a Docker CLI.

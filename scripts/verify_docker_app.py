@@ -99,8 +99,8 @@ def verify(api_port, web_port, reviewed, output):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--api-port", type=int, default=8000)
-    parser.add_argument("--web-port", type=int, default=8501)
+    parser.add_argument("--api-port", type=int, default=43872)
+    parser.add_argument("--web-port", type=int, default=43871)
     parser.add_argument("--reviewed-profile", action="store_true")
     parser.add_argument("--output", type=Path, default=Path(".runtime/cca009-verification"))
     arguments = parser.parse_args()

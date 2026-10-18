@@ -28,7 +28,7 @@ Each test gets a fresh hardened worker container, private 96 MiB tmpfs and NsJai
 
 The worker removes its temporary source/input/output/configuration files before returning. The coordinator then removes that test's container before starting the next test. The transport bounds request/response data and has a separate 45-second infrastructure deadline plus bounded stop/removal time. That infrastructure deadline does not extend the program's configured limit. Cleanup failure returns `SYSTEM_ERROR` and stops the batch. The validated originals/private expected outputs remain available only until the batch workspace is automatically removed on completion or failure; generated runtime files never carry into a later test.
 
-Normal cleanup does not guarantee cleanup after an abrupt host/API crash or daemon outage. A container has hard CPU/memory/process/tmpfs limits regardless of coordinator availability. The operator must remove a stranded `cca-judge-*` container after such an outage. There is no persistent job database or crash-recovery service in CCA-003.
+Normal cleanup does not guarantee cleanup after an abrupt host/API crash or daemon outage. A container has hard CPU/memory/process/tmpfs limits regardless of coordinator availability. The operator must remove a stranded `<project>-judge-worker-*` container after such an outage; filter by `net.kereszteszsolt.contest-check.role=judge-worker` and verify its name/state before removal. Older deployments used `cca-judge-*`. There is no persistent job database or crash-recovery service in CCA-003.
 
 ## Comparison rules
 

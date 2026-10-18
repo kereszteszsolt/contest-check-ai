@@ -103,7 +103,7 @@ def test_transport_always_removes_only_its_container(worker_request, monkeypatch
     assert len(launches) == len(removals) == 1
     command, options = launches[0]
     name = command[command.index("--name") + 1]
-    assert name.startswith("cca-judge-")
+    assert name.startswith(transport.worker_project() + "-judge-worker-")
     assert removals[0][0] == [
         "/usr/bin/docker",
         "--host",
@@ -195,3 +195,20 @@ def test_exchange_bounds_pipe_output_and_drains_input(monkeypatch, response_size
         process.stdout.close()
         thread.join(timeout=2)
     assert not thread.is_alive() and bytes(received) == payload
+
+
+@pytest.mark.parametrize("project", ["contest-check-ai", "cca-second_local"])
+def test_workers_are_grouped_in_the_operator_compose_project(monkeypatch, project):
+    monkeypatch.setenv("JUDGE_COMPOSE_PROJECT", project)
+    command = transport.worker_command("/usr/bin/docker", "trusted-worker-name")
+    assert f"--label=com.docker.compose.project={project}" in command
+    assert "--label=com.docker.compose.service=judge-worker" in command
+    assert not any("com.docker.compose.oneoff" in value for value in command)
+    assert "--label=net.kereszteszsolt.contest-check.role=judge-worker" in command
+    assert not any(value.startswith(("--env", "--mount", "--publish")) for value in command)
+
+
+@pytest.mark.parametrize("project", ["", "Bad Project", "../escape", "--privileged", "a" * 64])
+def test_invalid_operator_project_names_use_the_safe_default(monkeypatch, project):
+    monkeypatch.setenv("JUDGE_COMPOSE_PROJECT", project)
+    assert transport.worker_project() == "contest-check-ai"

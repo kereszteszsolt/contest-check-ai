@@ -28,6 +28,11 @@ def checkbox(page, startswith):
     return next(item for item in page.checkbox if item.label.startswith(startswith))
 
 
+@pytest.fixture(autouse=True)
+def offline_judge_status(monkeypatch):
+    monkeypatch.setattr("contest_check.ui.judge_execution_setting", lambda: False)
+
+
 @pytest.fixture
 def authoring_page(client, monkeypatch):
     config = load_model_settings(

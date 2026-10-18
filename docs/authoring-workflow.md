@@ -1,6 +1,6 @@
 # Bounded authoring and teacher review — CCA-006/008
 
-The teacher-only LangGraph workflow uses the [configured models](model-configuration.md), strict `TaskDraft` schema and qualified offline worker. CCA-008 connects Streamlit generation/revision/approval/rejection to these checkpoints and the separate [student/teacher exports](challenge-packages.md). The legacy one-call CCA-005 API remains available. Local checks use mocked providers and inert source; live model/reference execution and independent challenge correctness review are **Not run**. See [release evidence](releases/release-0.2-ai-challenge-authoring/verification.md).
+The teacher-only LangGraph workflow uses the [configured models](model-configuration.md), strict `TaskDraft` schema and qualified offline worker. CCA-008 connects Streamlit generation/revision/approval/rejection to these checkpoints and the separate [student/teacher exports](challenge-packages.md). The legacy one-call CCA-005 API remains available. Most local checks use mocked providers/workers and inert source. A separate CCA-009 deployment check uses a fixed benign draft and actual offline workers: both reference cases passed. Live model generation, execution of live model output and independent challenge correctness review are **Not run**. See [release evidence](releases/release-0.2-ai-challenge-authoring/verification.md).
 
 ## Flow and trust boundary
 
@@ -80,6 +80,8 @@ Review request:
 Approval acknowledges the reviewable draft, including any visible mismatch, skipped checks or uncertainty; **it does not establish correctness, independently verify tests, accept official contest tests or publish anything**. `verification` remains `unverified` after approval. CCA-007 allows the approved materials to be downloaded as separate student/teacher packages with this explicit status. The UI requires a review acknowledgment before explicit approval; the application cannot establish whether the teacher has independently proved correctness.
 
 ## Reference checking
+
+The model call runs in the API first; reference workers start only after a valid draft is available. The root Compose project retains a stopped worker prerequisite-check service between jobs; it does not indicate that a particular draft was tested. Read the draft's reference-check results and run count for that evidence.
 
 Reference checking requires both `run_reference_tests: true` and the existing explicit operator settings `JUDGE_EXECUTION_ENABLED=true` / `JUDGE_REVIEWED_PROFILE=true`. These settings select the fixed `DockerWorker` transport; they do not establish qualification. Each worker still qualifies its real sandbox in its own process before running a candidate. Missing configuration returns `blocked / execution_disabled`; failed qualification, malformed worker response or cleanup/infrastructure uncertainty returns `blocked / sandbox_failure` and stops further tests in that check. No host/Python subprocess fallback is added. The [worker protocol and deployment boundary](judge-worker.md) are unchanged.
 

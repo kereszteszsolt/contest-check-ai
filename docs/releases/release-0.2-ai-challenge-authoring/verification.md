@@ -419,3 +419,121 @@ Final Docker audit: both API and web contain all **27 application Python files**
 ### Fix commit authorization and review
 
 The user subsequently explicitly authorized committing these follow-ups as a **fix**. The reviewed 20-path scope includes the earlier CCA-009 toolbar cleanup and CCA-008 session-lifetime correction, their regression/browser checks and documentation. The unchanged application source retains the preceding full **550 passed** result; full pytest was not repeated solely for the commit. Ruff, formatting, JavaScript syntax and whitespace checks passed again. Before staging, the empty index, exact intended paths, preserved line endings, local links, short SPDX headers, ignored runtime/.env files and absence of real local key values were checked. Staged blobs are compared to the reviewed normalized bytes before the fix commit. No push is authorized; integrated judge activation remains pending its existing separate approval.
+
+
+## 2026-10-18 — CCA-009 deployment review, ports, worker visibility and approved activation
+
+Authorization: the user requested a review with necessary fixes, clearer labels, nonconflicting external ports and visible isolated workers. They clarified that a recognizable worker under the project while running is sufficient; no permanent idle service is wanted. These are CCA-009 corrections, so no CCA-010/new architecture was created. After the concrete configuration and tests were ready, the user explicitly approved local API access to `/var/run/docker.sock` (including its broad Docker/host administration implications) and fixed benign end-to-end tests. This resolves the earlier automatic approval rejection recorded above; it does not grant the web/worker a socket or authorize live model calls. No commit/push approval was given.
+
+### Findings and changes
+
+- The prior default deployment correctly disabled judging and therefore started no job workers. Its ephemeral worker names lacked project grouping. Workers now use `<project>-judge-worker-<random ID>` and canonical project/service/oneoff labels, plus a fixed role label for filtering. Compose's project name is passed only to the trusted API as metadata; custom `-p` names are covered. Worker protocol, image, NsJail policy, resource limits and per-process qualification are unchanged. Source/task/participant data never enters names or labels.
+- Host API port 8000 overlapped a stopped CiteNook deployment. The reviewed free ports are **43871 web / 43872 API**, changed in Compose defaults, `.env.example`, the existing ignored `.env`, operator smoke defaults and Docker setup docs. Loopback bindings and internal 8501/8000 ports remain correct. Actual Docker port publication succeeded and freed this project's old 8000/8501 bindings.
+- The ignored `.env` contained Docker group 65534, while the real host socket group is 1001. Restricted user-namespace inspection maps that group to 65534; host inspection was required to obtain the correct value. The local setting is corrected to 1001. Existing provider credentials/model choices are retained. Deployment instructions require checking the actual host group after Docker/WSL changes.
+- The UI now reads bounded-time local `/health` operator state and disables Run solutions when execution is disabled, unavailable or malformed, even after successful archive validation. A configured flag is explicitly not proof of sandbox qualification. Backend enforcement remains independent. Workspace captions, validation feedback and disabled-execution guidance were clarified in the existing English UI.
+- The fixed mocked browser harness advertises only its synthetic worker to the UI without enabling Docker. Its assertions follow the new copy, and `CCA_BROWSER_EXECUTABLE` now selects an already-installed Chromium, matching the authoring harness. The batch cleanup helper filters the stable role label instead of the removed name prefix.
+
+### Focused and full checks
+
+Observed tooling: WSL2, CPython **3.12.13**, Docker Compose **5.3.0**, Chromium **151.0.7922.34**, Playwright **1.61.1**. No dependency/lockfile change. Exact commands (temporary audit/browser helper snapshots retained under ignored `.runtime/cca009-review/helpers/`):
+
+```bash
+/tmp/cca006-venv/bin/pytest -q tests/test_ui.py tests/test_authoring_ui.py tests/test_worker_transport.py
+/tmp/cca006-venv/bin/pytest -q
+/tmp/cca006-venv/bin/ruff check .
+/tmp/cca006-venv/bin/ruff format --check .
+/home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin/node --check scripts/verify_ui_reports.cjs
+docker compose -f compose.yaml config --quiet
+docker compose -f compose.yaml -f compose.judge.yaml config --quiet
+/tmp/cca006-venv/bin/python /tmp/cca009-config-audit.py
+/tmp/cca006-venv/bin/python /tmp/cca009-worker-visibility.py
+docker compose -f compose.yaml build api
+docker compose -f compose.yaml up -d --no-build --wait --wait-timeout 120
+/tmp/cca006-venv/bin/python scripts/verify_docker_app.py --output .runtime/cca009-review/default
+/tmp/cca006-venv/bin/python /tmp/cca009-container-audit.py
+/tmp/cca006-venv/bin/python /tmp/cca009-runtime-audit.py
+LD_LIBRARY_PATH=/tmp/type-nudge-linux-deps/extracted/usr/lib/x86_64-linux-gnu /home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin/node /tmp/cca009-docker-browser.cjs
+LD_LIBRARY_PATH=/tmp/type-nudge-linux-deps/extracted/usr/lib/x86_64-linux-gnu CCA_BROWSER_NODE=/home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin/node CCA_PLAYWRIGHT_MODULE=/tmp/cca008-browser/node_modules/playwright CCA_BROWSER_EXECUTABLE=/home/zsolti-wsl/.cache/ms-playwright/chromium-1234/chrome-linux64/chrome /tmp/cca006-venv/bin/python scripts/verify_ui_reports.py --output .runtime/cca009-review/offline-ui-final
+# Only after explicit user socket/sample-test approval:
+docker compose -f compose.yaml -f compose.judge.yaml build api
+docker compose -f compose.yaml -f compose.judge.yaml up -d --no-build --wait --wait-timeout 120
+/tmp/cca006-venv/bin/python /tmp/cca009-integrated-check.py
+/tmp/cca006-venv/bin/python /tmp/cca009-enabled-audit.py
+LD_LIBRARY_PATH=/tmp/type-nudge-linux-deps/extracted/usr/lib/x86_64-linux-gnu /home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin/node /tmp/cca009-enabled-browser.cjs
+git -c core.whitespace=cr-at-eol diff HEAD --check
+```
+
+Focused result: **66 passed in 14.62s**. Full result: **565 passed in 35.57s** (15 new regression cases). Ruff passed; **92 files already formatted**; JS syntax and whitespace checks passed. Unit tests remain mocked: unavailable/disabled/malformed health cannot enable a validated upload, reconnection restores eligibility, transport project labels are bounded operator metadata, unsafe project names fall back, and existing exact-name cleanup/no-host-fallback tests pass.
+
+The real existing worker image requalified with **38/38 checks**, with no network, host binds/socket, model environment, capabilities or published ports. Its running container was found by the project/role labels and removed afterward. A subsequent real API-to-worker batch exercised **12 fresh workers**: three AC, three WA, three TLE and three RE results; the configured REVIEW participant retained its three AC results, and the objectively oversized DQ participant had all three tests Not run. No numeric score is produced. Each of the 12 workers was inspected while present: network `none`, UID/GID 1000, read-only root, no capabilities/privileged mode, 384 MiB memory/no extra swap, 16 processes and no host mounts or model credentials. All 12 were removed before the batch returned. PDF and XLSX export succeeded. Exact report/batch/lifecycle evidence is under `.runtime/cca009-review/enabled/`; the integration helper invokes `scripts/verify_docker_app.py --reviewed-profile` and monitors only its new worker names.
+
+### Runtime and browser evidence
+
+Both default and enabled deployments passed real HTTP health/catalog checks, five configured model choices with zero configuration issues, valid archive validation and invalid ZIP rejection. Default mode returned the expected 503 execution-disabled response. After approval the same API returned the expected actual judge batch and reports. Both final services are healthy. Audits confirm all **27 application Python files** in both running services match the tested checkout byte-for-byte. Web retains `viewer` toolbar mode, zero disconnected-session retention, no provider environment and no Docker socket. Only the approved API has the socket with the matching supplemental host group. Internal loopback UI/API communication and externally published loopback ports were inspected.
+
+Final images: web/base `sha256:989e6673144bc4917b09566bf5bc41a0c4099f7febd503f1472c861464f3e3cf`; enabled API `sha256:193db81d1122cfc850792a24fab358dca36e97a43885521b2fd6ace02f2f31c9`; unchanged worker `sha256:61c28046ff9e657c00339d5771cfb5fa0f2c8b940778c2587b08518920eb54e9`. Current runtime IDs and isolation metadata are retained in local Docker/audit evidence. Use **both Compose files** on subsequent updates/restarts to retain enabled judging; base Compose alone deliberately disables it.
+
+Real Docker browser checks at **1440×1000** and **390×844** cover successful validation with Run solutions disabled in default mode and enabled in approved mode, workspace captions, native theme choices, Print handler observation, available Record screen menu, absent developer controls/resume, no horizontal overflow, **zero page errors and external requests**. No browser generation or additional contestant execution was requested. Desktop judge/mobile authoring screenshots were visually inspected. Separately, the real UI/API harness with a fixed mocked worker passed invalid/valid uploads, running/results/incomplete states, stale-result cleanup and actual PDF/XLSX browser downloads, with independent PDF text and XLSX rows/formula checks. This mocked browser export proof is separate from the actual Docker API-to-worker batch. Full native screen recording was previously verified; it was not repeated here.
+
+### Failures, review and limits
+
+The first focused pytest run stalled under restricted TestClient socket access and was interrupted; authorized local socket execution passed. The first worker visibility harness incorrectly expected `docker compose ps` to list transport-created oneoffs; Docker's project-label query confirmed visibility instead. That attempt's container was removed. **Docker Desktop's GUI grouping was not visually inspected**; grouping metadata and running Docker queries were verified. The first offline browser run failed because the default Playwright headless-shell executable was missing; using the existing explicit Chromium path fixed the harness without downloads. Configuration-audit assertions were corrected for the sandbox-mapped socket GID and Compose JSON's string-encoded memory limits; no resource limit was changed.
+
+Changed-file review checked local Markdown links, preserved existing line endings, short SPDX headers, no copied local secret values and an empty Git index. The prior automatic API socket rejection is resolved by explicit approval in this turn, and CCA-009's local deployment acceptance is now verified. No permanent worker or new story is needed under the user's clarification.
+
+**Not run:** live/paid Ollama/OpenRouter generation; generated-reference execution or independent teacher correctness review; unknown contestant code; fresh worker-image rebuild (unchanged image requalified); Docker Desktop GUI inspection; other hosts/architectures/browsers; physical printing/new screen recording; hosted CI/public deployment, image publication or commit/push. Qualification evidence remains host-specific and each worker must still qualify in its own process.
+
+
+## 2026-10-18 — CCA-009 retained worker, Docker Desktop grouping and per-service ports
+
+The user's latest clarification supersedes the preceding “no permanent worker” decision: web, API and a worker must remain together under one project, including a stopped worker when reference checking is not selected. The API row must show only its own port. These remain authorized CCA-009 fixes, with the existing API socket/sample-test permission; no new story or commit/push approval.
+
+### Correction and observed behavior
+
+The preceding label-only grouping inference was incorrect. Read-only inspection of the installed Docker Desktop UI bundle found that `com.docker.compose.oneoff=True` explicitly excludes a container from its Compose project group. The transport now omits that marker while retaining project/service labels and exact-name cleanup. Local source: `C:\Program Files\Docker\Docker\frontend\resources\app.asar`, `build/desktop-ui-build/assets/index-dS4Dlk8g.js`, SHA-256 `d376c57ef73f7e79400630170d3f33e1c099227e8c80b554e929b100648e90af`. No Docker Desktop files or preferences were modified.
+
+Root Compose extends the existing real offline `judge-worker` profile, runs `--check` once and retains the service as **Exited (0)**. Its logs contain **16 passed prerequisite checks**, `execution_ready: false`; this check is intentionally not a substitute for full per-job qualification. API waits for successful completion. The service has no network, secrets, host binds, socket or published ports and accepts no job source. Actual tests still use fresh qualified workers that are removed afterward. Both resolved default/enabled configurations contain the same retained service. The updated enabled deployment was started live; disabled-mode startup was not repeated after this change.
+
+Web and API now have separate network namespaces on the project's Compose bridge. Web uses the fixed allowlisted `http://api:8000` service address; native setup retains loopback. Removed shared image `EXPOSE` metadata. Runtime inspection and the actual Docker Desktop window show exactly **43872:8000 on API**, **43871:8501 on web**, and no worker port, with all three under **contest-check-ai**. Only the already-approved API has daemon access; web has no provider credentials/socket. Docker Desktop's running-only filter must be off to display stopped containers. No artificial idle loop or persistent job data was introduced.
+
+### Commands and results
+
+Same WSL2/CPython 3.12.13/Compose 5.3.0 and installed browser tooling as above. Exact commands:
+
+```bash
+/tmp/cca006-venv/bin/pytest -q tests/test_ui.py tests/test_worker_transport.py tests/test_authoring_tools.py tests/test_authoring_workflow.py
+/tmp/cca006-venv/bin/pytest -q
+docker compose -f compose.yaml config --quiet
+docker compose -f compose.yaml -f compose.judge.yaml config --quiet
+docker compose -f compose.yaml build web
+docker compose -f compose.yaml -f compose.judge.yaml build api
+docker compose -f compose.yaml -f compose.judge.yaml up -d --no-build --wait --wait-timeout 120
+/tmp/cca006-venv/bin/python .runtime/cca009-desktop/audit.py
+/tmp/cca006-venv/bin/python .runtime/cca009-desktop/verify-reference.py
+LD_LIBRARY_PATH=/tmp/type-nudge-linux-deps/extracted/usr/lib/x86_64-linux-gnu /home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin/node .runtime/cca009-desktop/browser.cjs
+'/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe' -NoProfile -NonInteractive -ExecutionPolicy Bypass -File 'C:\P\ghpub\www-temp\contest-check-ai\.runtime\cca009-desktop\capture.ps1'
+docker compose -f compose.yaml -f compose.judge.yaml ps --all
+/tmp/cca006-venv/bin/ruff check .
+/tmp/cca006-venv/bin/ruff format --check .
+git -c core.whitespace=cr-at-eol diff HEAD --check
+```
+
+Focused checks: **97 passed in 7.84s**. Full suite: **571 passed in 34.89s**, six new fixed-service/invalid-host cases. Worker command tests reject the incorrect oneoff label and retain isolation/cleanup coverage. Builds/full-project startup passed; API and web healthy, retained worker exited 0. All **27 installed application Python files** in both services match current checkout SHA-256 bytes.
+
+A separate `docker exec` Python process inside the actual API image exercises the real FastAPI route and LangGraph with `run_reference_tests: true`. Only the generator/settings are replaced with a fixed benign addition draft; provider transport is explicitly refused. This does not modify the running server's workflows. Result: **one mocked model call, zero live calls, two real worker runs, AC/AC**, reference status `completed`, workflow `awaiting_review`, correctness still `unverified`. Each job was inspected while present: correct project labels, no network/mounts/ports/model credentials, non-root read-only profile, all capabilities dropped, 384 MiB memory/swap limit and 16 processes. Both job containers were removed; the original stopped service retained the same ID. The synthetic workflow was deleted and returned 404. This proves the opted-in reference route with a known draft, not live model output or independent correctness.
+
+Real Docker browser smoke passed at **1440×1000** and **390×844** using Chromium 151.0.7922.34 / Playwright 1.61.1: valid upload/validation, enabled Run solutions, both workspaces and existing native toolbar controls, no developer/resume controls, zero horizontal overflow/page errors/external requests. No browser generation/additional execution was requested. Windows `PrintWindow` captured only Docker Desktop: visual inspection confirms all three grouped rows and the two correct port cells. A capture during the reference probe also shows the extra transient job row inside the same group during startup; Docker inspection separately observed the jobs running. Final capture confirms only the two healthy services and retained stopped worker remain.
+
+Evidence stays ignored under `.runtime/cca009-desktop/`: `audit.json`, `reference-result.json`, `reference-workers.json`, fixed verification helpers, `browser/browser.json`, browser screenshots, `docker-desktop.png` and `docker-desktop-running.png`. Final images: API `sha256:f37bfeee93777564159e956e0a1238c5e45166feced092e9130134f73b7b7364`, web `sha256:c1aa4a84640e6dd6f900c9f064c2d15d528785fef72ea91b3781072be1e1257a`, unchanged worker `sha256:61c28046ff9e657c00339d5771cfb5fa0f2c8b940778c2587b08518920eb54e9`. Container IDs are in `audit.json`.
+
+An initial service-only `docker compose -f compose.yaml up -d --no-build --no-deps --wait --wait-timeout 30 judge-worker` returned exit 1 because `--wait` expected the selected standalone service to remain running, although the worker correctly exited 0. The full-project command above includes API's `service_completed_successfully` dependency and passes. This was an invocation issue, not a failing prerequisite check. No isolation setting was weakened. A documentation edit initially invoked unavailable host `python`; retrying with the existing verification virtualenv succeeded without installing anything.
+
+**Not run:** live/paid model calls or execution of live model output; independent teacher correctness review; unknown contestant code; fresh worker rebuild; a second disabled-mode deployment after the final change; other Docker Desktop versions/hosts/browsers; hosted CI/public deployment, image publication or commit/push. Historical mocked authoring checks and prior 38-probe sandbox/12-worker judge proof remain separate evidence. The preceding lack of GUI proof and incorrect oneoff grouping claim are superseded by the actual Desktop inspection above.
+
+Final review: Ruff passed, **92 files already formatted**, JavaScript syntax and whitespace checks passed. Reviewed **21 changed paths**, **76 resolving local Markdown links**, no mixed line endings or copied local secret values; `.env` and runtime artifacts remain ignored and the Git index is empty. No commit/push.
+
+### Commit authorization and final review
+
+The user explicitly requested committing these fixes. The reviewed 21-path CCA-009 scope includes worker visibility/grouping, separate project ports and web/API networking, judge-status copy/gating, regression/operator checks and documentation. Application source is unchanged since the full **571 passed** result and real Docker/browser/reference checks above; those tests were not repeated solely for the commit. Ruff, formatting (**92 files**), JavaScript syntax, both quiet Compose configuration checks and whitespace checks passed again. Before staging, the index was empty; reviewed local links, line endings, ignored `.env`/runtime artifacts and absence of local credential values are rechecked. Staged contents must match the reviewed normalized bytes. Commit approval does not include a push or live model call.
+
+The initial staged whitespace check without explicit line-ending options reported CRLF-only noise. Repeating with `git -c core.autocrlf=true -c core.safecrlf=false -c core.whitespace=cr-at-eol diff --cached --check` uses the reviewed normalization; staged blob hashes are checked independently against the reviewed LF bytes. Worktree line endings are preserved.
