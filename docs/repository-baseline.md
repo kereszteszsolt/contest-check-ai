@@ -1,4 +1,4 @@
-# Repository inventory — original baseline and CCA-001–005
+# Repository inventory — original baseline and CCA-001–006
 
 The original documentation baseline was a **plan for Codex**, with no runnable Python application. CCA-001 now adds a Python 3.12 Streamlit/FastAPI foundation, pinned `uv` packaging, typed task schema, bounded safe ZIP ingestion, private temporary extraction/cleanup, inert demo archives and unit/API/UI tests. See [local development](local-development.md) and [Release 0.1 evidence](releases/release-0.1-automated-judge/verification.md).
 
@@ -18,6 +18,8 @@ Original documentation retained:
 
 CCA-005 adds backend-only configured Ollama/OpenRouter slots, bounded LangChain adapters, strict unverified task drafts and an explicit teacher selection/preview screen. Only mocked provider/API/AppTest checks are recorded; no live model is verified. See [model configuration](model-configuration.md) and [Release 0.2 evidence](releases/release-0.2-ai-challenge-authoring/verification.md).
 
-Still deliberately absent: LangGraph orchestration, generated-reference checking, teacher approval and student/teacher package export, web/API containers, public deployment and CI executing submissions. Only the explicitly configured native coordinator can request judging; a separate worker accepts a program only after its real sandbox checks pass. API/Streamlit never execute uploaded/generated programs themselves.
+CCA-006 adds a bounded Pydantic LangGraph workflow, two fixed checking tools, opt-in reference checks through the existing qualified worker transport, expiring in-memory checkpoints and backend teacher approve/revise/reject. Actual graph/interrupt/API tests use mocked models/workers; live model/reference execution and manual teacher smoke are Not run. Approval leaves correctness unverified. See [authoring workflow](authoring-workflow.md).
+
+Still deliberately absent: polished authoring/review UI, final independent teacher verification, student/teacher package export, web/API containers, public deployment and CI executing submissions. Only the explicitly configured native coordinator can request judging; a separate worker accepts a program only after its real sandbox checks pass. API/Streamlit never execute uploaded/generated programs themselves.
 
 Validate actual dependency licenses and host sandbox capabilities before enabling code execution on another installation. This local-operator-only implementation is not a universal safety guarantee or a public deployment.

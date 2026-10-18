@@ -80,6 +80,15 @@ class DraftRequest(ContractModel):
         return self
 
 
+class DraftContext(ContractModel):
+    """Bounded workflow context, carried as data in a separate model message."""
+
+    topic: Annotated[str, Field(min_length=1, max_length=120)]
+    difficulty: Literal["beginner", "intermediate", "advanced"]
+    revision: Annotated[str, Field(max_length=2_000)] = ""
+    previous_draft: TaskDraft | None = None
+
+
 class ModelChoice(ContractModel):
     slot: ModelSlot
     provider: Provider

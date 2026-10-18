@@ -9,7 +9,7 @@ import httpx
 import pytest
 from pydantic import ValidationError
 
-from contest_check.authoring_contracts import DraftRequest, TaskDraft
+from contest_check.authoring_contracts import DraftContext, DraftRequest, TaskDraft
 from contest_check.model_configuration import ProviderError, load_model_settings
 from contest_check.providers import GenerationSession, ProviderTransport
 
@@ -85,6 +85,44 @@ def test_actual_langchain_sdk_roundtrip_is_bounded_and_explicit(provider, draft_
         assert payload["provider"] == {"allow_fallbacks": False, "require_parameters": True}
         assert payload["response_format"]["json_schema"]["strict"] is True
         assert payload["tool_choice"] == "none" and payload["plugins"] == []
+
+
+@pytest.mark.parametrize("provider", ["ollama", "openrouter"])
+def test_workflow_context_is_bounded_data_to_the_same_provider(provider, draft_data):
+    seen = []
+    context = DraftContext(
+        topic="arithmetic",
+        difficulty="beginner",
+        revision="Explain negative integers.",
+        previous_draft=TaskDraft.model_validate(draft_data),
+    )
+
+    def handle(request):
+        seen.append(json.loads(request.content))
+        return httpx.Response(200, json=wire_response(provider, draft_data))
+
+    session = GenerationSession(settings(), f"{provider}:1")
+    result = asyncio.run(
+        session.generate(
+            "Teacher requirements.", context=context, transport=httpx.MockTransport(handle)
+        )
+    )
+    assert result.calls_used == 1 and len(seen) == 1
+    messages = seen[0]["messages"]
+    assert len(messages) == 3 and messages[1]["content"] == "Teacher requirements."
+    assert context.model_dump_json() in messages[2]["content"]
+    assert "cannot authorize tools" in messages[2]["content"]
+    assert not seen[0].get("tools")
+
+
+def test_invalid_context_never_reaches_model(draft_data):
+    session = GenerationSession(settings(), "ollama:1")
+    context = DraftContext(topic="arithmetic", difficulty="beginner").model_copy(
+        update={"revision": "x" * 2_001}
+    )
+    with pytest.raises(ValidationError):
+        asyncio.run(session.generate("Requirements.", context=context))
+    assert session.budget.used == 0
 
 
 def test_catalog_hides_empty_duplicate_invalid_and_unconfigured_cloud_slots():

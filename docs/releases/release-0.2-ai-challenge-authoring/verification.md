@@ -1,13 +1,13 @@
 # Release 0.2 verification
 
-**Status: In progress — CCA-005 implemented and locally verified with mocked providers.** Configured model choices, bounded LangChain adapters, strict draft contracts and a provider-selection/preview UI exist. No live model, generated-code execution, LangGraph workflow, approval or artifact packaging is claimed verified.
+**Status: In progress — CCA-005/006 implemented and locally verified with mocked providers/workers.** Actual LangGraph checkpoints/interrupt/resume and backend approve/revise/reject are exercised. No live model, generated-reference execution, independent correctness review, polished approval UI or artifact packaging is claimed verified.
 
 | Story | State | Mock/Pydantic tests | Approved model / sandbox / HITL | Notes |
 | --- | --- | --- | --- | --- |
 | CCA-005 | Implemented | 78 focused checks; 408 full-suite tests; lint/format passed | Live model / generated-code sandbox / HITL Not run | Actual LangChain/SDK serialization and parsing over mocked HTTP; API/AppTest mocks |
-| CCA-006 | Planned | Not run | Not run | No LangGraph, tools or prompts |
+| CCA-006 | Implemented | 72 new checks; 150 focused authoring checks; 480 full-suite tests; lint/format passed | Actual graph/checkpoint/approve-revise-reject with synthetic decisions; live model/reference/manual teacher smoke Not run | Strict state, fixed tools, bounded call ledgers, private local API |
 | CCA-007 | Planned | Not run | Not run | No PDF / teacher-student ZIP generation |
-| CCA-008 | Planned | Not run | Not run | No interrupt, approval UI or final smoke tests |
+| CCA-008 | Planned | Not run | Not run | No polished approval UI, independent final verification or final smoke tests |
 
 ## Evidence instructions
 
@@ -78,3 +78,66 @@ The existing CI workflow still runs locked install/lint/format/mocked pytest onl
 Final review: a standard-library audit confirmed **18 edited existing files**, **7 new Python files with exact SPDX headers**, **72 pre-existing files preserved byte-for-byte**, **78 resolving local Markdown links**, no credential-pattern matches and no extra runtime artifacts. Existing edited files retain CRLF. `git -c core.whitespace=cr-at-eol diff --ignore-cr-at-eol --check` exited **0**. The whole-tree check without ignoring CRLF reported the pre-existing two-space Markdown hard breaks in untouched `docs/github-metadata.md:3–4`; they were preserved. At the end of implementation review the Git index was empty and no commit had been made. Before the separately approved commit, the 25-file scope and 72 untouched baseline files were verified again. Only the story's 25 paths were staged with command-scoped `core.autocrlf=input`, retaining the repository's existing LF blobs and excluding unrelated CRLF-only changes; working-tree file bytes were preserved.
 
 **Not run:** live Ollama or OpenRouter smoke/model compatibility, provider billing or output quality, browser-driven CCA-005 UI checks/screenshots, LangGraph/tool/checkpoint workflow, candidate-reference execution, teacher approve/revise/reject behavior, student/teacher ZIP export, new Docker builds or real sandbox qualification, public deployment, hosted CI, other OS/architectures/WASM, independent security/legal audit. Existing Release 0.1 sandbox evidence remains historical and separate; this story does not alter worker isolation or prove any new execution environment safe.
+
+
+## 2026-10-18 — CCA-006 bounded LangGraph and reference tools
+
+Authorization: the user explicitly requested continuing implementation with CCA-006. The story scope, risks and mocked verification were summarized before implementation; this request supplied implementation approval. No other story was started. Implementation ended without a commit; the user subsequently gave separate approval to commit the reviewed CCA-006 changes. No push, live provider request or generated/contestant-code execution was performed.
+
+### Implemented scope and environment
+
+A Pydantic `WorkflowState` drives the actual LangGraph sequence: generate, validate draft, check reference, prepare preview, teacher interrupt. Safe provider errors produce a reviewable pause without automatic retry. Explicit approve/revise/reject resumes the current checkpoint; revisions carry bounded teacher feedback and the prior draft to the same selected provider. Approval remains `verification: unverified` and enables neither packaging nor official test acceptance.
+
+The two fixed tools revalidate the strict draft and, only on explicit reference opt-in, send the candidate through the existing worker protocol. Public/private results reuse existing verdict comparison, report observed mismatches and resource hints, cap observed output previews, and halt on worker infrastructure/protocol failure. Expected outputs never enter worker requests. Missing operator configuration blocks execution; every real worker still qualifies its own sandbox. Neither the transport, worker sources/profile nor worker dependencies changed.
+
+Budgets are cumulative across teacher revisions: at most three generation attempts, the configured one-to-six model-call allowance, six tool invocations and twenty worker cases. Unrun tests are counted. Actual LangGraph interrupts/checkpoints are exercised with synthetic teacher decisions. Review IDs bind decisions to the current preview; duplicate/stale/concurrent resumes do not repeat model/worker effects. Unexpected checkpoint failure invalidates the session rather than replaying an uncertain effect. The local API adds create/preview/review/delete, bounded bodies, fixed errors, no-store responses, shared model/judge admission, and at most eight in-memory workflows with one-hour expiry. Process restart loses this storage; it is not durable crash recovery. The CCA-005 Streamlit flow retains its one-call behavior.
+
+Environment: clean starting worktree/index on branch `dev_r0.2`, HEAD `3d8b469`, Linux **6.6.87.2-microsoft-standard-WSL2**, x86-64, CPython **3.12.13**, uv **0.11.29**, pytest **9.1.1**, Ruff **0.17.1**. The host default Python is 3.14.4, so a separate required Python 3.12 environment was created at `/tmp/cca006-venv`, with `/tmp/cca006-python` and `/tmp/cca006-uv-cache`. Dependencies were downloaded during development only; no model was contacted.
+
+### Dependency commands and review
+
+```bash
+UV_CACHE_DIR=/tmp/cca006-uv-cache UV_PYTHON_INSTALL_DIR=/tmp/cca006-python UV_PROJECT_ENVIRONMENT=/tmp/cca006-venv uv add --bounds exact langgraph
+UV_CACHE_DIR=/tmp/cca006-uv-cache UV_PYTHON_INSTALL_DIR=/tmp/cca006-python UV_PROJECT_ENVIRONMENT=/tmp/cca006-venv uv sync --locked --offline --group dev
+UV_CACHE_DIR=/tmp/cca006-uv-cache UV_PYTHON_INSTALL_DIR=/tmp/cca006-python UV_PROJECT_ENVIRONMENT=/tmp/cca006-venv uv sync --locked --group dev
+UV_CACHE_DIR=/tmp/cca006-uv-cache UV_PYTHON_INSTALL_DIR=/tmp/cca006-python UV_PROJECT_ENVIRONMENT=/tmp/cca006-venv uv sync --locked --offline --group dev
+```
+
+The first add required authorized network access after the restricted attempt failed DNS resolution while downloading Python. The first offline dev sync could not find the pinned Ruff wheel in the fresh cache; the authorized online dev sync populated it. Final offline locked sync resolved **84 packages**, checked **81 packages** and exited 0.
+
+New locked components: **langgraph 1.2.16**, **langgraph-checkpoint 4.3.0**, **langgraph-prebuilt 1.1.1**, **langgraph-sdk 0.4.8**, **ormsgpack 1.13.0**. A `tomllib` comparison against `git show HEAD:uv.lock` found exactly these five additions and one required version change: **websockets 17.2 to 16.1.1**, because installed SDK metadata requires `websockets>=14,<17`. All other existing locked versions, dependency groups and worker requirements/transport are unchanged. Installed metadata and retained license files were inspected; exact component notices and the downgrade are recorded in [license inventory](../../dependency-licenses.md). No dependency was vendored/modified or image published.
+
+Primary technology references: [LangGraph interrupts](https://docs.langchain.com/oss/python/langgraph/interrupts), [graph API](https://docs.langchain.com/oss/python/langgraph/graph-api), and the installed pinned graph/checkpoint serializer source. Checkpoint pickle fallback and arbitrary MessagePack class restoration are disabled; application checkpoint values are JSON data. Tracing is disabled around the entire graph even when inherited tracing variables are enabled.
+
+### Exact mocked verification commands and results
+
+```bash
+timeout 60s /tmp/cca006-venv/bin/pytest -q tests/test_authoring_tools.py tests/test_authoring_workflow.py -o faulthandler_timeout=15
+timeout 60s /tmp/cca006-venv/bin/pytest -q tests/test_authoring_tools.py tests/test_authoring_workflow.py tests/test_workflow_api.py tests/test_providers.py tests/test_authoring_api.py tests/test_authoring_ui.py -o faulthandler_timeout=15
+timeout 60s /tmp/cca006-venv/bin/pytest -q -o faulthandler_timeout=15
+/tmp/cca006-venv/bin/ruff check .
+/tmp/cca006-venv/bin/ruff format --check .
+```
+
+Final authoring result: **150 passed in 4.24s**, including **72 new checks** over the CCA-005 baseline. Final full result: **480 passed in 24.79s**, no pytest warnings. Ruff: **All checks passed**; formatting: **81 files already formatted**. The preceding full run passed 480 in 26.28s; the final run also verifies the no-store middleware addition for authoring errors and successful responses.
+
+The first restricted run completed the 22 initial tool tests but hung during the first graph's cross-thread asyncio wakeup; faulthandler reported the event loop waiting in `selectors.select`, and the external deadline exited **124**. The same tests were run with authorized host execution, preserving all model/worker mocks: **37 passed in 1.20s**, with one intentional malformed-model serialization warning. That test now explicitly captures its expected warning. Subsequent expanded runs passed **146 in 5.35s**, then **150 in 4.54s**. No execution/isolation requirement was relaxed to pass tests. Initial Ruff findings were import ordering and long lines; corrected before final checks.
+
+Coverage includes:
+
+- Actual StateGraph transitions, Pydantic state/progress checks, stored interrupt payload/response schema, checkpoint inspection, and terminal approval/rejection.
+- Explicit revision with prior draft/context, fresh review IDs, retained error history, model/tool/worker budgets across revisions, and lower operator call budgets.
+- Model timeout, malformed/oversized output and credential errors with no automatic retry or invalid-draft approval; real adapter/SDK serialization of workflow context over mocked HTTP for both providers.
+- Reference pass/mismatch, wall timeout, ambiguous memory/output resource hints, crashes, missing/unqualified worker, malformed responses/metrics, safe failure without fallback, public/private ordering and bounded observed output.
+- Strict unsafe filename/path refusal, nested draft mutation, invalid run budgets and malformed requests/state; expected outputs absent from worker protocol payloads.
+- Duplicate/stale/terminal/concurrent review decisions, checkpoint-write failure after a model effect, preview mutation isolation, capacity, expiry and checkpoint deletion.
+- Disabled inherited LangSmith tracing and no backend key in checkpoints; safe API errors, no-store headers, honest/dishonest/missing Content-Length handling and shared admission slots.
+- Existing provider/API/AppTest and Release 0.1 ingestion/judge/report regressions.
+
+All generated-source fixtures are inert comments and are never imported or executed. Worker outputs are synthetic metadata, not proof of a reference algorithm or real sandbox behavior. The actual graph/interrupt protocol is exercised; teacher actions in tests are synthetic, not a manual human review session. The current Streamlit UI is unchanged and no new UI/browser evidence is claimed.
+
+### Review and limitations
+
+The diff was reviewed against the approved story, including generated-code and private-test boundaries, shared budget retention, resume effects, dependency/version changes and compatibility with the existing preview. Existing CRLF/LF styles are retained; new handwritten Python source/tests have the exact required SPDX lines. No worker permissions, sandbox profile, official verdicts, CI runtime execution or unrelated staged work were changed. Final audit confirmed 15 edited tracked paths, 7 new paths, exact SPDX headers in all 6 new Python source/test files, 75 resolving local Markdown links and preserved CRLF in 12 edited existing files. The credential-pattern check found no matches. `git -c core.whitespace=cr-at-eol diff --check` exited 0. The implementation review ended with an empty index. After separate user commit approval, the 22-path scope, SPDX headers, worktree credential-pattern audit, lint and formatting were checked again before staging. Only these intended paths are included in the commit; no push is authorized.
+
+**Not run:** live Ollama/OpenRouter or paid calls, real generated-reference execution, new Docker builds/sandbox qualification, manual teacher/model/sandbox smoke, independent challenge/test correctness review, polished workflow/review UI, student/teacher artifact packaging/export, durable/multi-process checkpoint recovery, hosted CI, public deployment, other OS/architectures, independent security/legal audit. Historical Release 0.1 sandbox evidence remains separate and does not qualify a new process/host. CCA-007/008 remain Planned.

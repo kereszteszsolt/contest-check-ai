@@ -2,7 +2,7 @@
 
 ## Status
 
-**Planned**.
+**Implemented — locally verified with mocked models/workers and actual LangGraph checkpoints.** Live model/reference execution and manual teacher UI smoke are **Not run**. See [workflow contracts](../../../authoring-workflow.md) and [release evidence](../verification.md).
 
 ## User story
 
@@ -18,13 +18,13 @@ CCA-005 providers and an actually verified Release 0.1 judge sandbox for referen
 
 ## Acceptance criteria
 
-- [ ] Workflow accepts bounded natural-language instructions, topic/difficulty and chosen configured model, and produces typed problem statement, candidate reference solution, public examples and teacher-private test draft.
-- [ ] Graph state tracks draft, warnings, attempts, tool results, approval state and errors across nodes; no uncontrolled agent loop or unrestricted OS/shell tool access.
-- [ ] Agent tools have a minimal allowlist (e.g., `validate_draft`, `run_reference_tests`); only the approved judge worker can execute the candidate reference source.
-- [ ] Reference tests report observed output mismatches and resource limits; generated tests/reference are labelled **unverified** unless independent review has occurred.
-- [ ] LangGraph `interrupt`/checkpoint can pause with a reviewable preview and resume on explicit teacher approval/revision/rejection; resume does not duplicate side effects.
-- [ ] Enforce maximum model/tool calls; reject unsafe output requests or unapproved file paths; uploaded instructions and model-generated content are treated as untrusted data.
-- [ ] Mocked graph/tool tests cover pass, mismatch, malformed state, timeout, rejection and resume; no test executes untrusted source outside verified isolation.
+- [x] Workflow accepts bounded natural-language instructions, topic/difficulty and chosen configured model, and produces typed problem statement, candidate reference solution, public examples and teacher-private test draft.
+- [x] Graph state tracks draft, warnings, attempts, tool results, approval state and errors across nodes; no uncontrolled agent loop or unrestricted OS/shell tool access.
+- [x] Agent tools have a minimal allowlist (e.g., `validate_draft`, `run_reference_tests`); only the approved judge worker can execute the candidate reference source.
+- [x] Reference tests report observed output mismatches and resource limits; generated tests/reference are labelled **unverified** unless independent review has occurred.
+- [x] LangGraph `interrupt`/checkpoint can pause with a reviewable preview and resume on explicit teacher approval/revision/rejection; resume does not duplicate side effects.
+- [x] Enforce maximum model/tool calls; reject unsafe output requests or unapproved file paths; uploaded instructions and model-generated content are treated as untrusted data.
+- [x] Mocked graph/tool tests cover pass, mismatch, malformed state, timeout, rejection and resume; no test executes untrusted source outside verified isolation.
 
 ## Out of scope
 

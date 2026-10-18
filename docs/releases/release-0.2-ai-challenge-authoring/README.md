@@ -1,6 +1,6 @@
 # Release 0.2 — AI Challenge Authoring
 
-**Status: In progress — CCA-005 implemented and locally verified with mocked providers.** Backend-only model allowlists, bounded LangChain adapters, strict task drafts and an explicit provider-selection/draft-preview UI exist. No live model has been verified. CCA-006–008 (LangGraph, sandbox-backed reference checks, packages and teacher approval) remain planned. Depends on the verified, fail-closed Python judge from Release 0.1.
+**Status: In progress — CCA-005/006 implemented and locally verified with mocked providers/workers.** Configured adapters and the one-call preview are joined by a bounded LangGraph backend with opt-in worker reference checks and teacher approve/revise/reject checkpoints. Actual graph/checkpoint behavior is tested; no live model or generated-reference execution is verified. CCA-007/008 packages, polished review UI and final teacher verification remain planned. Depends on the verified, fail-closed Python judge from Release 0.1. See [workflow contracts](../../authoring-workflow.md).
 
 ## Goal
 
@@ -11,7 +11,7 @@ Given teacher instructions, produce a **reviewable** algorithm challenge draft w
 | Story | Goal | Status |
 | --- | --- | --- |
 | [CCA-005](stories/CCA-005-configured-llm-providers.md) | Up to 3+3 configured models and validated outputs | Implemented; mocked SDK/API/UI checks passed, live models Not run |
-| [CCA-006](stories/CCA-006-langgraph-generation-and-tools.md) | Bounded LangGraph / sandbox-backed test tools | Planned |
+| [CCA-006](stories/CCA-006-langgraph-generation-and-tools.md) | Bounded LangGraph / sandbox-backed test tools | Implemented; actual graph/API with mocked models/workers, live checks Not run |
 | [CCA-007](stories/CCA-007-student-teacher-artifact-packages.md) | PDF + examples/starter ZIP, private test ZIP | Planned |
 | [CCA-008](stories/CCA-008-teacher-approval-and-verification.md) | HITL approval, UI, security tests, CI and docs | Planned |
 

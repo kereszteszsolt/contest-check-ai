@@ -1,5 +1,11 @@
 # Dependency license inventory
 
+## CCA-006 LangGraph additions (2026-10-18)
+
+The API adds the direct pin `langgraph==1.2.16`, with locked `langgraph-checkpoint==4.3.0`, `langgraph-prebuilt==1.1.1`, `langgraph-sdk==0.4.8` and `ormsgpack==1.13.0`. Installed distribution metadata and retained notices were inspected: the four LangGraph distributions are MIT and each retains its LICENSE; ormsgpack declares **Apache-2.0 OR MIT** and retains both LICENSE-APACHE and LICENSE-MIT.
+
+The required SDK declares `websockets>=14,<17`, so the resolver changes the existing web/API transitive dependency from **17.2 to 16.1.1**; its BSD-3-Clause LICENSE is retained. All other pre-existing locked package versions are unchanged. The application uses the local StateGraph/InMemorySaver, not an SDK remote client or hosted LangGraph service. Tracing is explicitly disabled. No dependency is vendored/modified or image published; the offline worker dependency group, requirements and isolation are unchanged. These notices remain component-specific; this is not a new security/legal audit. See [workflow contracts](authoring-workflow.md) and [release evidence](releases/release-0.2-ai-challenge-authoring/verification.md).
+
 ## CCA-005 model adapter additions (2026-10-17)
 
 Existing versions remain unchanged. The following new Linux web/API dependencies were resolved with exact direct pins and a hashed lockfile. Installed distribution metadata and retained license files were inspected; this inventory is not a complete security/legal audit of future bundles.
