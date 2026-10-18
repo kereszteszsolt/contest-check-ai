@@ -1,0 +1,18 @@
+# Explicit local-operator mode. The trusted API receives Docker administration access.
+# Qualify the reviewed worker first; no daemon socket reaches web or judge containers.
+services:
+  api:
+    image: contest-check-api-judge:local
+    build:
+      target: judge-api
+    environment:
+      JUDGE_EXECUTION_ENABLED: "true"
+      JUDGE_REVIEWED_PROFILE: "true"
+    group_add:
+      - "${DOCKER_GID:?Set DOCKER_GID to the local docker.sock group ID before enabling judge mode}"
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        bind:
+          create_host_path: false

@@ -65,14 +65,63 @@ uv run --frozen python scripts/verify_authoring_ui.py --output .runtime/cca008-v
 
 The harness needs separately installed Node/Playwright/Chromium; it starts real loopback UI/API services with a fixed model mock and disabled worker. No live/paid call occurs. See [verification evidence](releases/release-0.2-ai-challenge-authoring/verification.md) for results and limits. A real model smoke requires separate approval; the shipped feature is not proof of model availability or challenge correctness.
 
-## Docker layout (worker only)
+## Docker deployment — CCA-009
 
-CCA-002 adds a separately deployed worker and scoped Docker files under `deploy/worker/`; see [the worker guide](judge-worker.md). Only the worker is a Compose service. Streamlit/API run natively with the commands above; no web/API containers or daemon-socket mounts are supplied. The service boundaries are:
+The root `compose.yaml` builds Streamlit and FastAPI using the exact Python 3.12.13 / uv 0.11.29 image digests and existing lockfile. It uses separate non-root, read-only containers with bounded CPU/memory/processes and temporary scratch storage. The worker-specific build context is unchanged. The application Dockerfile has its own allowlist so `.env`, `.git`, uploads, runtime artifacts and local virtual environments never enter the build context/image.
 
-| Service | Responsibility and permitted access |
-| --- | --- |
-| `web` | Streamlit presentation; connects only to the internal API; no worker executable or model credentials |
-| `api` | Archive validation and coordination; bounded private temporary filesystem; no contestant execution |
-| `judge-worker` | Implemented one-shot worker with mandatory real NsJail qualification; no internet, secrets, Docker socket or unrelated application files; explicit isolated runtime/input/output only |
+From the repository root, create `.env` from `.env.example` only if it does not already exist; retain existing provider credentials/settings. Unlike native Python startup, **Docker Compose reads the root `.env` for interpolation**. Only explicitly listed provider settings/keys go to API; web receives only its internal API port. No model request occurs during startup or catalog/health lookup.
 
-The worker uses a private bounded tmpfs, non-root user, read-only root, no network and no shared upload root with the web process. Every worker process qualifies the actual jail before accepting a program; the recorded host passed the isolation/negative checks. A plain container is never an execution fallback. The native trusted coordinator uses a fixed local Docker CLI command; it does not execute a solution itself or mount the daemon socket into workers. The startup commands above leave judging disabled by default; explicit worker/API setup is documented in [judging.md](judging.md). Never make a failed qualification green with privileged mode, broad syscall overrides or public worker ports. Normal upload/runtime workspaces are cleaned automatically; report creation is capped and memory-only.
+```bash
+docker compose config --quiet
+docker compose up -d --build --wait
+docker compose ps
+curl --fail http://127.0.0.1:8000/health
+```
+
+Open <http://127.0.0.1:8501>. `APP_PORT` and `API_PORT` in `.env` change the two published host ports; container ports remain 8501/8000. Both published ports bind only to `127.0.0.1`. Web shares API's Docker network namespace (`network_mode: service:api`) so the existing UI always calls `127.0.0.1:8000`; their filesystems, process namespaces and environment remain separate. Port mappings therefore appear on the API container. Compose manages both services together.
+
+**Default mode intentionally returns `execution_enabled: false`.** Validation, authoring/catalog/review and packaging work without a Docker socket. Run solutions is refused; requested reference checks remain blocked. This default cannot execute a submission even if the root `.env` contains judge flags. The explicit judge override below is required. No Docker-in-Docker daemon or worker network server is added.
+
+To stop/restart default mode:
+
+```bash
+docker compose stop
+docker compose up -d --wait
+```
+
+Uploads/reports/checkpoints are temporary; API restart loses process-local authoring checkpoints. No application data volume/database is added. Images and the root `.env` remain. Model availability and challenge correctness still require their own checks.
+
+### Explicit judge-enabled mode
+
+Read [worker prerequisites](judge-worker.md) and the [concrete reviewed worker profile](worker-security-review.md). **The trusted API coordinator needs Docker administration access through the local Unix socket.** `compose.judge.yaml` grants that access only to API, using the socket's actual group ID. This is broad daemon/host control, not a narrowly scoped worker-only permission. Enable it only for the trusted local operator deployment with explicit approval. Web and every code-executing worker receive no socket or model credentials.
+
+Build/qualify the worker before enabling execution:
+
+```bash
+docker compose -f deploy/worker/compose.yaml build judge-worker
+docker compose -f deploy/worker/compose.yaml -f deploy/worker/compose.reviewed.yaml run --rm --no-deps judge-worker --verify
+stat -c '%g' /var/run/docker.sock
+```
+
+Set `DOCKER_GID` in the ignored root `.env` to the last command's number. After reviewing and approving the trusted API socket exposure:
+
+```bash
+docker compose -f compose.yaml -f compose.judge.yaml config --quiet
+docker compose -f compose.yaml -f compose.judge.yaml up -d --build --wait
+```
+
+Use this same file pair for subsequent updates/restarts. The override selects the `judge-api` image target with a digest-pinned Docker CLI 29.6.1 and the exact reviewed seccomp profile at the installed package's fixed lookup path; no application-source change or user-supplied profile/command is introduced. No host checkout/uploads are mounted. The socket bind refuses to create a missing host path. `/health` reports the operator flags, **not qualification**. Every program/test still creates a fresh Linux worker with no network, host mounts, socket or model environment and must pass all real NsJail startup checks in that process. The API never imports/executes contestant/reference source. Failed qualification/cleanup stops execution; no host or plain-container fallback exists.
+
+The current local judge-enabled startup is **awaiting explicit approval**: automatic approval review rejected the API socket exposure. The optional image builds and worker qualification pass; an API-container-to-worker execution result is not yet claimed. See [CCA-009](releases/release-0.2-ai-challenge-authoring/stories/CCA-009-local-docker-deployment.md) and [observed evidence](releases/release-0.2-ai-challenge-authoring/verification.md).
+
+### Operator verification
+
+```bash
+uv run --frozen python scripts/verify_docker_app.py
+# Only after approved judge mode and real worker qualification:
+uv run --frozen python scripts/verify_docker_app.py --reviewed-profile
+```
+
+This optional operator script uses fixed benign CCA-003 fixtures and a loopback API only. Without the explicit flag it never submits executable fixtures to an enabled judge. In default mode it checks health, catalog, valid/invalid archives and the expected 503 execution-disabled response. In enabled mode it checks observed AC/WA/TLE/RE, objective DQ/REVIEW and PDF/XLSX exports through the actual running API. It never calls a model or runs program source on the host. It is not run by pytest/CI.
+
+Docker/uv references: [Compose networking](https://docs.docker.com/compose/how-tos/networking/), [Dockerfile-specific context allowlists](https://docs.docker.com/build/concepts/context/#dockerignore-files), [uv multi-stage locked installs](https://docs.astral.sh/uv/guides/integration/docker/).

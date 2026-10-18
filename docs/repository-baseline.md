@@ -24,6 +24,8 @@ CCA-007 adds approval-gated separate student/teacher ZIPs, a public-only printab
 
 CCA-008 connects Streamlit to the actual graph with explicit revision/approval/rejection, safe unknown-outcome recovery and audience-validated ZIP downloads. Mocked API/AppTest and offline browser checks cover the teacher flow; no live provider/reference execution or independent teacher correctness proof is claimed. Creation IDs prevent repeated model effects within the bounded process-local retention window. See [teacher workflow](authoring-workflow.md).
 
-Still deliberately absent: independent teacher correctness verification, web/API containers, public deployment and CI executing submissions. Only the explicitly configured native coordinator can request judging; a separate worker accepts a program only after its real sandbox checks pass. API/Streamlit never execute uploaded/generated programs themselves.
+CCA-009 adds local web/API Compose and an explicit trusted API judge override. Base mode is running and worker qualification passed; integrated judge mode is awaiting separate authorization for the API Docker socket. See [Docker setup](local-development.md#docker-deployment--cca-009).
+
+Still deliberately absent: independent teacher correctness verification, public deployment and CI executing submissions. Only the explicitly configured native coordinator can request judging; a separate worker accepts a program only after its real sandbox checks pass. API/Streamlit never execute uploaded/generated programs themselves.
 
 Validate actual dependency licenses and host sandbox capabilities before enabling code execution on another installation. This local-operator-only implementation is not a universal safety guarantee or a public deployment.

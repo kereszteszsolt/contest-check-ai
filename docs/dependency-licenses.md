@@ -1,5 +1,9 @@
 # Dependency license inventory
 
+## CCA-009 Docker application images (2026-10-18)
+
+The application image installs the unchanged locked Python distributions, retaining their installed notices and bundled DejaVu license, on the same digest-pinned CPython/Debian base as the worker. Build-only uv 0.11.29 is copied from its exact official image digest; it is absent from the final application images. The optional trusted judge API target adds only the **Docker CLI 29.6.1** binary from the digest-pinned official `docker:29.6.1-cli` image. Its original [Apache-2.0 license and Docker copyright notice](https://github.com/docker/cli/blob/v29.6.1/LICENSE) are retained in `deploy/app/LICENSE-Docker-CLI.txt` and `/usr/share/doc/docker-cli/LICENSE` in that image. Docker CLI source and its Go dependency notices remain upstream; no binary is vendored in Git or image published. The full Alpine CLI image/daemon/plugins are not copied into the Python application image. This local build is not an independent redistribution/legal audit; review all component obligations before external image distribution.
+
 ## CCA-007 embedded PDF fonts (2026-10-18)
 
 Python dependency pins/lockfile and worker dependencies are unchanged. The public challenge PDF uses unmodified **DejaVu Sans / DejaVu Sans Mono 2.37** TTF files, copied from the local `fonts-dejavu-core 2.37-8build1` distribution into `src/contest_check/assets/fonts/`. The font files retain the **Bitstream Vera license** copyright/trademark/permission/disclaimer notice, with DejaVu changes in the public domain. The full applicable upstream font notice is in `LICENSE-DejaVu.txt`, retained in the built Python wheel and copied into every student ZIP as `FONT-LICENSE.txt`. The unrelated Debian packaging files/license section was not copied; no Debian packaging code is vendored. See the [upstream font license](https://dejavu-fonts.github.io/License.html).

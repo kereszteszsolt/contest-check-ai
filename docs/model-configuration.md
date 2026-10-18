@@ -1,6 +1,6 @@
 # Ollama and OpenRouter model configuration — Release 0.2
 
-CCA-005 implements **at most six explicitly allowlisted models**: three Ollama and three OpenRouter. Settings are read only by FastAPI from its process environment; `.env` is not loaded automatically. Do not give the OpenRouter key to Streamlit, the browser or the offline worker. Blank slots are hidden; repeated IDs within a provider keep only their first slot. A configured choice is not proof that its model is installed, reachable or supports JSON-schema output.
+CCA-005 implements **at most six explicitly allowlisted models**: three Ollama and three OpenRouter. Settings are read only by FastAPI from its process environment. Native Python does not load `.env`; the optional [local Docker setup](local-development.md#docker-deployment--cca-009) uses Compose interpolation from the root `.env`, passing provider settings only to API. Do not give the OpenRouter key to Streamlit, the browser or the offline worker. Blank slots are hidden; repeated IDs within a provider keep only their first slot. A configured choice is not proof that its model is installed, reachable or supports JSON-schema output.
 
 ```dotenv
 OLLAMA_BASE_URL=http://host.docker.internal:11434

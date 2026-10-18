@@ -1,6 +1,6 @@
 # Release 0.2 — AI Challenge Authoring
 
-**Status: CCA-005–008 implemented and locally verified with mocked providers/workers and synthetic artifacts.** The configured adapters feed a bounded LangGraph workflow, explicit Streamlit approve/revise/reject checkpoints and separate approved student/teacher ZIP/PDF downloads. Actual graph/checkpoint/API/AppTest behavior and a real local browser flow are exercised, including fresh-session resume and lost-response recovery tests. The teacher ZIP passes judge archive validation. No live model, generated-reference execution, independent teacher correctness review, hosted CI or public deployment is verified. See [workflow contracts](../../authoring-workflow.md), [package contracts](../../challenge-packages.md) and [verification evidence](verification.md). Reference checks depend on the existing qualified, fail-closed Release 0.1 judge.
+**Status: CCA-009 local Docker deployment is in progress; CCA-005–008 implemented and locally verified with mocked providers/workers and synthetic artifacts.** The configured adapters feed a bounded LangGraph workflow, explicit Streamlit approve/revise/reject checkpoints and separate approved student/teacher ZIP/PDF downloads. Actual graph/checkpoint/API/AppTest behavior and a real local browser flow are exercised, including fresh-session resume and lost-response recovery tests. The teacher ZIP passes judge archive validation. No live model, generated-reference execution, independent teacher correctness review, hosted CI or public deployment is verified. See [workflow contracts](../../authoring-workflow.md), [package contracts](../../challenge-packages.md) and [verification evidence](verification.md). Reference checks depend on the existing qualified, fail-closed Release 0.1 judge.
 
 ## Goal
 
@@ -14,5 +14,6 @@ Given teacher instructions, produce a **reviewable** algorithm challenge draft w
 | [CCA-006](stories/CCA-006-langgraph-generation-and-tools.md) | Bounded LangGraph / sandbox-backed test tools | Implemented; actual graph/API with mocked models/workers, live checks Not run |
 | [CCA-007](stories/CCA-007-student-teacher-artifact-packages.md) | PDF + examples/starter ZIP, private test ZIP | Implemented; synthetic ZIP/PDF/API checks and visual PDF inspection, live reference Not run |
 | [CCA-008](stories/CCA-008-teacher-approval-and-verification.md) | HITL approval, UI, security tests, CI and docs | Implemented; actual UI/API/graph with mocks, synthetic browser decisions and ZIP/PDF checks; live provider/reference Not run |
+| [CCA-009](stories/CCA-009-local-docker-deployment.md) | Local Docker UI/API deployment and isolated Linux judge execution | In progress; explicitly requested after CCA-008 |
 
 No RAG, GitHub access, arbitrary web fetching, auto-publication, advanced scoring, custom checker execution or multi-agent swarm. Observed evidence belongs in [verification.md](verification.md).

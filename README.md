@@ -86,7 +86,7 @@ The initial checker uses a documented text comparison rule for file-based I/O. R
 | Initial solution language | **Python**; C, C++ and Free Pascal considered later |
 | Documents & exports | **ReportLab** PDF, **XlsxWriter** XLSX, standard ZIP archives; **pypdf/openpyxl** are test readers |
 | Tests | **pytest**, isolated security/runner integration checks |
-| Deployment | Native Streamlit/FastAPI; **Docker Compose for the one-shot worker only**, no public worker endpoint |
+| Deployment | Native setup or local **Docker Compose UI/API**; optional trusted API judge override; separate offline one-shot worker |
 | Database | **No application database** — temporary judge workspaces; bounded process-local `InMemorySaver` authoring checkpoints (one hour, lost on restart) |
 
 Python dependencies are pinned in `pyproject.toml` and `uv.lock`; see the [dependency license inventory](docs/dependency-licenses.md). The [CCA-002 worker guide](docs/judge-worker.md) documents the pinned NsJail/Kafel build, reviewed Docker profile, Linux host requirements and actual integration evidence. It is a separate one-shot service, with no public worker endpoint.
@@ -150,7 +150,7 @@ OPENROUTER_MODEL_3=
 
 Empty model slots do not appear in the UI. Cloud calls require configured server-side credentials and explicit user selection; no surprise fallback or unbounded loop. **Only selected prompts and draft materials** are sent to the chosen LLM. Student submissions are not automatically uploaded to an LLM. Refer to [Model configuration](docs/model-configuration.md).
 
-## Local setup — archive validation only
+## Local setup — validation and challenge authoring
 
 Install dependencies, then start the API and UI in separate terminals from the repository root:
 
@@ -161,7 +161,15 @@ uv run --frozen uvicorn contest_check.api:app --host 127.0.0.1 --port 8000 --lim
 uv run --frozen streamlit run streamlit_app.py --server.port 8501
 ```
 
-Open <http://127.0.0.1:8501>. For authoring, configure only the API environment and follow the [teacher workflow](docs/authoring-workflow.md#streamlit-teacher-workflow). Use `uv run --frozen python scripts/make_demo_archives.py` to create inert validation fixtures in `.runtime/demo/`; their comment-only sources are not correct solutions. For judging, first follow [judging.md](docs/judging.md) to build/qualify the worker and start the API with both explicit operator settings. Then upload, validate, run, review the tables and prepare/download PDF/XLSX reports. `.env` is not loaded automatically. The [development guide](docs/local-development.md) documents actual native services and the worker-only Compose layout.
+Open <http://127.0.0.1:8501>. For authoring, configure only the API environment and follow the [teacher workflow](docs/authoring-workflow.md#streamlit-teacher-workflow). Use `uv run --frozen python scripts/make_demo_archives.py` to create inert validation fixtures in `.runtime/demo/`; their comment-only sources are not correct solutions. For judging, first follow [judging.md](docs/judging.md) to build/qualify the worker and start the API with both explicit operator settings. Then upload, validate, run, review the tables and prepare/download PDF/XLSX reports. `.env` is not loaded automatically. The [development guide](docs/local-development.md) documents native services and the optional local Compose deployment.
+
+## Local Docker setup — CCA-009
+
+```bash
+docker compose up -d --build --wait
+```
+
+Open <http://127.0.0.1:8501>; API health is <http://127.0.0.1:8000/health>. Compose reads model settings from the ignored root `.env` and gives credentials only to API. **Default mode disables code execution.** The optional reviewed judge mode uses separate offline Linux/NsJail workers and requires explicit approval for the trusted API's Docker administration access; activation is currently pending that approval. See [Docker setup and operator checks](docs/local-development.md#docker-deployment--cca-009), [CCA-009](docs/releases/release-0.2-ai-challenge-authoring/stories/CCA-009-local-docker-deployment.md) and [evidence](docs/releases/release-0.2-ai-challenge-authoring/verification.md). No live model call occurs at startup.
 
 ## Roadmap, stories and verification
 
@@ -169,9 +177,9 @@ Open <http://127.0.0.1:8501>. For authoring, configure only the API environment 
 | --- | --- |
 | [Roadmap](docs/roadmap.md) | Release scope and ordering |
 | [Release 0.1 – Automated Judge](docs/releases/release-0.1-automated-judge/README.md) | Four Python judge/reporting stories |
-| [Release 0.2 – AI Challenge Authoring](docs/releases/release-0.2-ai-challenge-authoring/README.md) | Four LangChain/LangGraph authoring stories |
+| [Release 0.2 – AI Challenge Authoring](docs/releases/release-0.2-ai-challenge-authoring/README.md) | Authoring stories and CCA-009 local Docker deployment |
 | [Release 0.1 verification](docs/releases/release-0.1-automated-judge/verification.md) | CCA-001–004 checks, browser/report artifacts and host-specific sandbox evidence |
-| [Release 0.2 verification](docs/releases/release-0.2-ai-challenge-authoring/verification.md) | CCA-005/006 mocked provider/worker and actual graph/API evidence; live model/reference checks `Not run` |
+| [Release 0.2 verification](docs/releases/release-0.2-ai-challenge-authoring/verification.md) | CCA-005–008 authoring evidence and CCA-009 Docker checks/approval boundary |
 | [Architecture](docs/architecture.md) | UI, orchestration, worker, agents and diagrams |
 | [Archive contracts](docs/archive-contracts.md) | Task/submission/student/teacher ZIP schemas |
 | [Security and sandbox](docs/security-and-sandbox.md) | Critical execution safeguards and fail-closed gates |

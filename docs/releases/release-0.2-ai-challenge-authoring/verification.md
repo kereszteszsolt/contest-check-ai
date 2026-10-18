@@ -1,6 +1,6 @@
 # Release 0.2 verification
 
-**Status: CCA-005–008 implemented and locally verified with mocked providers/workers and synthetic artifacts/teacher decisions.** Actual graph approval/resume, Streamlit API integration, separate ZIP/PDF exports and fresh-browser-session checkpoint recovery are exercised. The teacher ZIP passes judge validation. Hungarian sample PDFs were parsed, rendered and visually inspected by Codex. No live model, generated-reference execution, independent teacher correctness review, hosted CI or public deployment is claimed. Historical sections below describe the scope at their respective story boundaries; CCA-008 supersedes earlier planned-UI status.
+**Status: CCA-009 Docker deployment is in progress with socket approval pending; CCA-005–008 implemented and locally verified with mocked providers/workers and synthetic artifacts/teacher decisions.** Actual graph approval/resume, Streamlit API integration, separate ZIP/PDF exports and fresh-browser-session checkpoint recovery are exercised. The teacher ZIP passes judge validation. Hungarian sample PDFs were parsed, rendered and visually inspected by Codex. No live model, generated-reference execution, independent teacher correctness review, hosted CI or public deployment is claimed. Historical sections below describe the scope at their respective story boundaries; CCA-008 supersedes earlier planned-UI status.
 
 | Story | State | Mock/Pydantic tests | Approved model / sandbox / HITL | Notes |
 | --- | --- | --- | --- | --- |
@@ -8,6 +8,7 @@
 | CCA-006 | Implemented | 72 new checks; 150 focused authoring checks; 480 full-suite tests; lint/format passed | Actual graph/checkpoint/approve-revise-reject with synthetic decisions; live model/reference/manual teacher smoke Not run | Strict state, fixed tools, bounded call ledgers, private local API |
 | CCA-007 | Implemented | 42 new checks; 173 focused checks; 522 full-suite tests; lint/format passed | Mocked graph/API decisions; real ZIP/PDF parsing and Codex visual PDF inspection; live reference Not run | Separate public/private projections, fixed starter, direct teacher-ZIP judge ingestion |
 | CCA-008 | Implemented | 80 focused checks; 542 full-suite tests; lint/format passed | Actual UI/API/graph, synthetic browser approve/revise/reject and resume; live provider/reference/manual independent review Not run | Lost-response recovery, checkpoint-bound controls, bounded creation ledger, separate audience-validated downloads |
+| CCA-009 | In progress | Docker build, health/API/browser/ZIP smoke passed; 38 real worker checks | Default UI/API active without socket; integrated judge activation awaits explicit permission | Automatic review rejected broad API Docker-socket access; no bypass |
 
 ## Evidence instructions
 
@@ -267,3 +268,73 @@ The actual downloaded archives passed `validate_export_archive`; pypdf independe
 Final scope: 17 edited tracked paths and two new operator harness sources; no unrelated changes. Both new source files have the exact two-line SPDX header. The final audit found 84 resolving local Markdown links, consistent CRLF in 10 edited existing files, zero credential-pattern matches in the changed/new files and zero staged paths. `git -c core.whitespace=cr-at-eol diff HEAD --check` exited 0; final Ruff/format/JavaScript syntax checks passed. The implementation review ended without a commit. After separate user commit approval, the 19-path scope, SPDX headers, credential-pattern scan, local links, lint, formatting, JavaScript syntax and whitespace checks were verified again. Only the intended CCA-008 paths are included in the approved commit; no push is authorized.
 
 **Not run:** live Ollama/OpenRouter or paid calls, real generated-reference/contestant execution, fresh sandbox qualification/Docker build, independent challenge/reference/private-test correctness review by a teacher, a live teacher/model/sandbox demo, durable or multi-process checkpoint recovery, hosted CI/public deployment, other browser/OS/architectures or independent security/legal audit. Historical Release 0.1 sandbox evidence is separate and does not qualify a new worker process/host. Approval and generated reference/test agreement cannot establish independent correctness. The UI/API are for a local teacher/operator, not a public account service; the process-local ID ledger is not crash-proof exactly-once billing protection.
+
+## 2026-10-18 — CCA-009 local Docker deployment (in progress)
+
+Authorization: the user requested starting the application in Docker, explicitly requested a user story for this capability and clarified that submitted/reference code must execute in Linux Docker containers. CCA-009 was added to Release 0.2. Implementation began from the clean `dev_r0.2` / `fbf802b` CCA-008 commit. Implementation initially ended without commit approval. The user subsequently authorized committing the reviewed CCA-009 state. This approval covers the repository changes, not the previously rejected API socket activation; CCA-009 remains In progress until that separate permission and integrated runtime verification. No push is authorized.
+
+### Scope, configuration and observed state
+
+Root `compose.yaml` and `deploy/app/Dockerfile` now build separate non-root, read-only UI/API containers with the unchanged Python lockfile, resource limits and tmpfs scratch. The Dockerfile-specific context allowlist excludes local `.env`, Git data, virtual environments, uploads and runtime evidence; runtime COPY statements also name only explicit application/notice files. Models/keys reach only API from the root `.env`. All published ports bind to 127.0.0.1: **8501 UI**, **8000 API**. Web shares API's network namespace so the existing loopback client works; filesystems/process environments remain separate. No database/data volume, public hosting, model fetch or runtime package installation is added.
+
+The root default runs with **execution disabled and no Docker socket in either container**, irrespective of native judge flags in `.env`. The optional `compose.judge.yaml` is prepared with a separate `judge-api` image, exact Docker CLI 29.6.1 digest, fixed packaged seccomp location, socket GID and an explicit host socket bind for the trusted coordinator only. This is broad Docker administration permission; it is not a worker-restricted API. No application source/worker transport, sandbox policy, official verdict or dependency/lockfile changes were needed. Docker CLI retains its original Apache license/copyright notice. Native launch remains supported.
+
+The ignored root `.env` retained its existing bytes/credentials; only the local socket group setting `DOCKER_GID=65534` was appended. It remains ignored/untracked and is excluded from image builds. No key values or resolved secret-bearing Compose/inspect output were printed. Native Python still does not load `.env`; Docker Compose performs interpolation explicitly.
+
+### Automatic approval boundary — judge activation not performed
+
+Automatic approval review **rejected** `docker compose -f compose.yaml -f compose.judge.yaml up -d --build --wait --wait-timeout 120` before it ran. Stated reason: mounting the host Docker socket into the API grants broad host/container control and persistently enables judge execution; the user's general request for Docker execution did not explicitly authorize that socket exposure. The rejection was not bypassed through another container, proxy, host coordinator or indirect launch. The default socket-free services stayed active; their health reports `execution_enabled: false`.
+
+Unaffected work was completed: the optional image builds successfully without mounting a socket, its CLI version and exact profile lookup are checked, real offline worker qualification succeeds, safe default-mode HTTP/browser/package checks pass, and documentation describes both modes. **Explicit user approval of trusted API Docker-socket access is still required before activation and the real API-container-to-worker batch/export checks.** CCA-009 remains In progress; no successful integrated judge result is claimed.
+
+### Environment, commands and results
+
+Observed host: Docker Desktop **4.82.0 (233772)**, Engine **29.6.1**, Compose **v5.3.0**, Linux/WSL2 x86-64 `6.6.87.2-microsoft-standard-WSL2`. Application Python **3.12.13**; build-only uv **0.11.29**. Digest pins:
+
+- Python base: `python:3.12.13-slim-bookworm@sha256:4766d8b510c428e595d74b9cc5bbb2fae8e26316fffb4adc89908d79aacd58a2`.
+- uv build tool: `ghcr.io/astral-sh/uv@sha256:78923b1c11ab847cc275c5706c70debc9eac743f935d7ad11966c1c983236aa3`.
+- Optional CLI source: `docker:29.6.1-cli@sha256:862099ada15c669000bef53aa4cb9d821262829f45b0dda2159ccb276443043b`.
+
+Exact principal commands:
+
+```bash
+docker compose config --quiet
+docker compose up -d --build --wait --wait-timeout 120
+docker compose -f compose.yaml up -d --build --wait --wait-timeout 120
+docker compose -f deploy/worker/compose.yaml -f deploy/worker/compose.reviewed.yaml run --rm --no-deps judge-worker --verify
+docker compose -f deploy/worker/compose.yaml run --rm --no-deps judge-worker --verify
+docker compose -f compose.yaml -f compose.judge.yaml config --quiet
+docker compose -f compose.yaml -f compose.judge.yaml build api
+docker run --rm --network none --read-only --cap-drop ALL --security-opt no-new-privileges:true --entrypoint docker contest-check-api-judge:local --version
+/tmp/cca006-venv/bin/python scripts/verify_docker_app.py
+LD_LIBRARY_PATH=/tmp/type-nudge-linux-deps/extracted/usr/lib/x86_64-linux-gnu /home/zsolti-wsl/.nvm/versions/node/v24.18.0/bin/node .runtime/cca009-verification/browser.cjs
+/tmp/cca006-venv/bin/ruff check .
+/tmp/cca006-venv/bin/ruff format --check .
+git -c core.whitespace=cr-at-eol diff HEAD --check
+```
+
+Base build/start and later rebuild/start: **exit 0, both services healthy**. The initial non-elevated Docker read was denied by the sandbox; authorized Docker access succeeded. Default worker `--verify`: **exit 78**, `execution_ready: false`, failing `jail_namespaces_privileges_limits` under the ordinary Docker syscall profile. Reviewed worker `--verify`: **exit 0, all 38 checks passed**, `execution_ready: true`; the one-shot qualification container was removed. This proves the observed host/profile only; every actual test worker must qualify again in its own process. No worker security restriction was relaxed or new profile introduced.
+
+Optional API build: **exit 0**, installed-package lookup assertion finds the exact reviewed profile, CLI reports **Docker 29.6.1, build 8900f1d** in a socket-free network-disabled one-off container. It has not been started with daemon access. Final observed runtime IDs:
+
+| Component | Image ID |
+| --- | --- |
+| Running UI/API base image | `sha256:81362dfcb30fb6f05e5ef891955d2074159ae6e6b66d621f40f26866c04485af` |
+| Built optional judge API image | `sha256:38fbd2a4ce8fb5b7d2a51d346ab378d9710f0cb20789758d2a57e5a8bd0c5e63` |
+| Existing freshly qualified worker | `sha256:61c28046ff9e657c00339d5771cfb5fa0f2c8b940778c2587b08518920eb54e9` |
+
+Container audit: user **1000:1000**, read-only roots, all capabilities dropped, no Docker socket on either running service, credentials present only on API, correct loopback published ports and shared network mode. All **26 installed application Python source files** match checkout SHA-256 bytes exactly. The optional image contains no model key. Seccomp profile SHA-256: `18cd477aa05c34d4211c0c907a7fb071701bdb3470357d20edebc130616d7c8b`.
+
+`verify_docker_app.py`: **exit 0** against real services. API and Streamlit health return 200; configured model catalog has **five choices, zero issues**, no-store; valid known ZIPs validate, malformed ZIP returns 400 `invalid_zip`; judging returns the expected 503 `execution_disabled`. No source runs and no provider call is made. The operator-only script also has an explicit `--reviewed-profile` path for later fixed AC/WA/TLE/RE/DQ/REVIEW and PDF/XLSX checks against the enabled deployment; this path is **Not run** pending permission. The script is not in CI and never runs program source locally.
+
+Browser smoke: real Docker Streamlit/API with Chromium **151.0.7922.34** / temporary Playwright **1.61.1**, desktop **1440×1000** and mobile **390×844**; successful upload/validation, visible safe execution-disabled error, explicit model selection/cloud cost notice and enabled-but-never-clicked Generate button. **Zero page errors and external browser requests**, no horizontal document overflow. No generation was requested. Codex visually inspected the judge/authoring desktop and authoring mobile screenshots. Final rebuild HTTP/browser smoke repeated successfully.
+
+A separate one-off base-image container with **network none, read-only root and no Docker socket/credentials** exercised actual installed LangGraph start/interrupt/approval and both ZIP/PDF exports using a fixed mocked generator and comment-only draft sources. Result: `approved`, correctness `unverified`, **zero real model calls, zero reference runs**. Both generated archives passed the strict audience validators; pypdf found the public Addition statement without private markers; the student ZIP retains the font license. This validates packaging/fonts in the container, not independent challenge correctness or real contestant execution.
+
+Local evidence stays ignored under `.runtime/cca009-verification/`: `app-smoke.json`, `browser.json`, desktop/mobile screenshots, `worker-qualification.json`, `container-audit.json`, `offline-packages.json`, synthetic exported ZIPs and the temporary fixed verification helpers. Nothing contains real student data or model keys. Ruff passed, format reports **90 files already formatted**, whitespace check exited 0. Application code/dependency locks are unchanged; the CCA-008 full **542-test** result remains prior evidence, not a newly rerun CCA-009 test count. Verification here is the actual Docker build/runtime smoke, not documentation alone.
+
+**Not run / pending:** explicit authorization and activation of the API Docker socket; real API-container-to-worker submission/reference execution, enabled-mode judge/export smoke and its cleanup proof; live Ollama/OpenRouter generation or paid calls; fresh worker rebuild (existing unchanged image requalified); independent teacher correctness review; hosted CI/public deployment; different OS/CPU/browser combinations; external image publication or independent security/license audit. The UI/API remain available at localhost while this approval is pending.
+
+### CCA-009 commit review
+
+After explicit user commit approval, the 18-path scope, source/license headers, ignored local `.env`, credential patterns, local documentation links and empty pre-stage index were rechecked. Ruff and format passed again. Both Compose configurations validate without printing resolved secrets. The default-mode HTTP smoke was repeated with `/tmp/cca006-venv/bin/python scripts/verify_docker_app.py --output /tmp/cca009-commit-verification`: healthy API/UI, five configured models without issues, successful valid/invalid upload checks and the expected disabled-judge response. No new container, model call or program execution was started. Story acceptance items for integrated code execution remain unchecked; the commit does not enable the optional socket profile.
