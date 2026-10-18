@@ -20,9 +20,11 @@ from contest_check.authoring_contracts import (
     ModelCatalog,
 )
 from contest_check.authoring_workflow import WorkflowStore
+from contest_check.challenge_packages import build_challenge_package
 from contest_check.judging import judge_archives
 from contest_check.model_configuration import ModelSettings, ProviderError, load_model_settings
 from contest_check.models import UploadError, ValidationSummary
+from contest_check.package_contracts import Audience, PackageError, PackageOptions
 from contest_check.providers import GenerationSession
 from contest_check.reports import MAX_REPORT_REQUEST_BYTES, MIME_TYPES, ReportLimit, build_report
 from contest_check.results import BatchResult
@@ -39,6 +41,7 @@ MAX_REQUEST_BYTES = 2 * DEFAULT_LIMITS.archive_bytes + 65_536
 JUDGE_SLOT = threading.BoundedSemaphore(1)
 REPORT_SLOT = threading.BoundedSemaphore(1)
 AUTHORING_SLOT = threading.BoundedSemaphore(1)
+PACKAGE_SLOT = threading.BoundedSemaphore(1)
 WORKFLOWS = WorkflowStore()
 UPLOAD_BODY = {
     "requestBody": {
@@ -336,6 +339,41 @@ def delete_authoring_workflow(
         return Response(status_code=204, headers={"Cache-Control": "no-store"})
     finally:
         AUTHORING_SLOT.release()
+
+
+@app.post("/api/authoring/workflows/{workflow_id}/packages/{audience}", response_class=Response)
+async def export_challenge_package(
+    workflow_id: OpaqueID,
+    audience: Audience,
+    options: PackageOptions,
+    store: Annotated[WorkflowStore, Depends(get_workflow_store)],
+):
+    if not PACKAGE_SLOT.acquire(blocking=False):
+        return error_response("package_busy", PackageError.ERRORS["package_busy"][1], 503)
+    try:
+        preview = store.get(workflow_id).preview()
+        try:
+            content = await run_in_threadpool(
+                build_challenge_package, audience, preview.state, options
+            )
+        except PackageError as error:
+            return error_response(error.code, error.message, error.status)
+        except Exception:
+            return error_response("package_failed", PackageError.ERRORS["package_failed"][1], 503)
+        return Response(
+            content,
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": (
+                    f'attachment; filename="{preview.state.draft.task_id}-{audience}.zip"'
+                ),
+                "Cache-Control": "no-store",
+                "X-Content-Type-Options": "nosniff",
+                "X-Challenge-Verification": "unverified",
+            },
+        )
+    finally:
+        PACKAGE_SLOT.release()
 
 
 @app.post(

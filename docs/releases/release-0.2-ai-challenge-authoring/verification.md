@@ -1,12 +1,12 @@
 # Release 0.2 verification
 
-**Status: In progress — CCA-005/006 implemented and locally verified with mocked providers/workers.** Actual LangGraph checkpoints/interrupt/resume and backend approve/revise/reject are exercised. No live model, generated-reference execution, independent correctness review, polished approval UI or artifact packaging is claimed verified.
+**Status: In progress — CCA-005/006/007 implemented and locally verified with mocked providers/workers and synthetic artifacts.** Actual graph approval/resume and approved student/teacher ZIP/PDF exports are exercised; the teacher ZIP passes judge validation and a Hungarian sample PDF was rendered/visually inspected by Codex. No live model, generated-reference execution, independent correctness review or polished approval/download UI is claimed verified.
 
 | Story | State | Mock/Pydantic tests | Approved model / sandbox / HITL | Notes |
 | --- | --- | --- | --- | --- |
 | CCA-005 | Implemented | 78 focused checks; 408 full-suite tests; lint/format passed | Live model / generated-code sandbox / HITL Not run | Actual LangChain/SDK serialization and parsing over mocked HTTP; API/AppTest mocks |
 | CCA-006 | Implemented | 72 new checks; 150 focused authoring checks; 480 full-suite tests; lint/format passed | Actual graph/checkpoint/approve-revise-reject with synthetic decisions; live model/reference/manual teacher smoke Not run | Strict state, fixed tools, bounded call ledgers, private local API |
-| CCA-007 | Planned | Not run | Not run | No PDF / teacher-student ZIP generation |
+| CCA-007 | Implemented | 42 new checks; 173 focused checks; 522 full-suite tests; lint/format passed | Mocked graph/API decisions; real ZIP/PDF parsing and Codex visual PDF inspection; live reference Not run | Separate public/private projections, fixed starter, direct teacher-ZIP judge ingestion |
 | CCA-008 | Planned | Not run | Not run | No polished approval UI, independent final verification or final smoke tests |
 
 ## Evidence instructions
@@ -141,3 +141,67 @@ All generated-source fixtures are inert comments and are never imported or execu
 The diff was reviewed against the approved story, including generated-code and private-test boundaries, shared budget retention, resume effects, dependency/version changes and compatibility with the existing preview. Existing CRLF/LF styles are retained; new handwritten Python source/tests have the exact required SPDX lines. No worker permissions, sandbox profile, official verdicts, CI runtime execution or unrelated staged work were changed. Final audit confirmed 15 edited tracked paths, 7 new paths, exact SPDX headers in all 6 new Python source/test files, 75 resolving local Markdown links and preserved CRLF in 12 edited existing files. The credential-pattern check found no matches. `git -c core.whitespace=cr-at-eol diff --check` exited 0. The implementation review ended with an empty index. After separate user commit approval, the 22-path scope, SPDX headers, worktree credential-pattern audit, lint and formatting were checked again before staging. Only these intended paths are included in the commit; no push is authorized.
 
 **Not run:** live Ollama/OpenRouter or paid calls, real generated-reference execution, new Docker builds/sandbox qualification, manual teacher/model/sandbox smoke, independent challenge/test correctness review, polished workflow/review UI, student/teacher artifact packaging/export, durable/multi-process checkpoint recovery, hosted CI, public deployment, other OS/architectures, independent security/legal audit. Historical Release 0.1 sandbox evidence remains separate and does not qualify a new process/host. CCA-007/008 remain Planned.
+
+
+## 2026-10-18 — CCA-007 student and teacher packages
+
+Authorization: the user requested continuing implementation with CCA-007. This supplied implementation approval after the story scope/risks were summarized. Only this story was implemented. Implementation ended without a commit; the user subsequently provided separate approval to commit the reviewed CCA-007 changes. No push, live model request or generated/contestant-code execution occurred.
+
+### Scope and environment
+
+The backend builds separate student/teacher ZIPs from a revalidated copy of the stored current approved workflow. Student output is an explicit public projection: statement/examples, resource/file-I/O constraints, public manifest, a fixed application-owned minimal starter and a printable PDF. Model-generated starter/reference code, private tests, warnings, prompts and check logs are excluded from public artifacts. Student bytes remain identical when only private source/warnings change. Approval is required but never changes correctness from `unverified`.
+
+Teacher ZIPs contain the unchanged strict judge manifest and private test pairs, plus the exact `teacher/README.md` / `teacher/checks.json` metadata pair and an optional `teacher/reference/main.py` on explicit teacher review assertion. This narrow ingestion-layout extension lets the complete teacher ZIP pass the existing judge validation route directly. Extra metadata never affects qualification/verdicts and is never executed or sent to a worker. All shared path/type/duplicate/CRC/size/compression/nested-archive checks remain in force; the worker/transport and dependency pins are unchanged.
+
+Reference evidence comes from existing workflow checks, including skipped/blocked/partial/not-run gaps. Export starts no worker/model call and does not infer independent correctness from generated reference/test agreement. The new local API refuses client-supplied drafts/approval/source/paths, rejects unapproved/rejected downloads, bounds option bodies, serializes exports, returns fixed safe errors and serves no-store ZIP attachments with an explicit unverified header. Existing teacher preview remains available for unapproved/rejected drafts. The Streamlit workflow/download UI and final independent verification remain CCA-008 scope.
+
+PDFs render escaped plain text with packaged DejaVu Sans/Mono 2.37 fonts, Hungarian long accents, file/resource constraints, samples and explanations. Unsupported glyphs/control/bidi text fails explicitly. Limits: 1 MiB PDF, 60 pages, 2,400 rendered line units, and the shared archive/file/manifest limits. No remote image/font fetch, active PDF action/form/attachment, external template or temporary export workspace is added. Exact sample bytes are preserved separately from printable wrapping/tab expansion. ZIP_STORED, fixed timestamps/modes, stable JSON and invariant PDF output are deterministic in the pinned environment.
+
+Environment: clean starting worktree on `dev_r0.2`, HEAD `2aaab75`, Linux/WSL2 x86-64, CPython 3.12.13, uv 0.11.29, pytest 9.1.1, Ruff 0.17.1; reused `/tmp/cca006-venv`, `/tmp/cca006-python` and `/tmp/cca006-uv-cache`. `pyproject.toml`, `uv.lock`, worker requirements/transport and sandbox profiles are unchanged. No application/test dependency was added.
+
+### Exact automated checks
+
+```bash
+timeout 60s /tmp/cca006-venv/bin/pytest -q tests/test_challenge_packages.py tests/test_archives.py -o faulthandler_timeout=15
+timeout 60s /tmp/cca006-venv/bin/pytest -q tests/test_package_api.py tests/test_workflow_api.py -o faulthandler_timeout=15
+timeout 60s /tmp/cca006-venv/bin/pytest -q tests/test_challenge_packages.py tests/test_package_api.py tests/test_archives.py tests/test_workflow_api.py -o faulthandler_timeout=15
+timeout 60s /tmp/cca006-venv/bin/pytest -q -o faulthandler_timeout=15
+/tmp/cca006-venv/bin/ruff check .
+/tmp/cca006-venv/bin/ruff format --check .
+UV_CACHE_DIR=/tmp/cca006-uv-cache UV_PYTHON_INSTALL_DIR=/tmp/cca006-python uv build --offline --wheel --out-dir /tmp/cca007-dist
+```
+
+Final focused result: **173 passed in 3.05s**. Final full result: **522 passed in 24.61s**, including **42 new tests**, with no pytest warnings. The preceding expanded checks passed 172 in 3.12s / 521 in 25.09s and 172 in 2.96s / 521 in 25.27s. Earlier standalone archive/package checks passed **132 in 1.44s**; workflow/export API checks passed **40 in 2.49s**. TestClient/LangGraph checks used authorized host execution for the previously established restricted cross-thread asyncio limitation; all provider/worker calls stayed mocked. Ruff passed; final formatting check reports **87 files already formatted** (including supported Markdown code blocks).
+
+Coverage includes exact public/private ZIP membership, unchanged student output under private-source/warning changes, fixed starter without model code, teacher-only reviewed-reference opt-in, exact/empty/Unicode/CRLF examples, deterministic bytes/timestamps/modes, public manifest/PDF parsing, Hungarian glyph extraction/embedded fonts, escaped HTML-like text and inactive PDF content, line/page/byte caps, maximum-length task-ID footer abbreviation with complete manifest ID, unsupported control/glyph handling, expected-output byte limits, unsafe paths/nested payloads/teacher metadata allowlists, judge-ready ingestion and extraction cleanup, approval/rejection/expiry/body/option/error/concurrency API boundaries, and no extra provider/worker calls during export.
+
+An offline Python wheel was built successfully. A ZIP inspection of the final wheel compared the three new application modules, both TTF files and the notice byte-for-byte with current source; all matched. Font binaries match `/usr/share/fonts/truetype/dejavu/` originals from `fonts-dejavu-core 2.37-8build1`. The retained full applicable Bitstream Vera/public-domain DejaVu notice is packaged and copied into the student ZIP. Exact hashes/terms are recorded in [license inventory](../../dependency-licenses.md); no upstream font binary was modified and no unrelated Debian packaging code was copied.
+
+### Rendered synthetic artifact inspection
+
+A trusted fixture helper constructed the approved, explicitly unverified Hungarian task **Két szám összege**, with two public examples and inert comment-only starter/reference model fields. The actual fixed application starter was exported. Files were written only under `/tmp/cca007-artifacts/`; no new repository runtime artifacts were retained:
+
+- `addition-student.zip`: **47,787 bytes**, nine members (two example pairs).
+- `addition-teacher.zip`: **3,284 bytes**, six members including the explicitly requested inert reviewed-reference fixture.
+- `problem.pdf`: **42,636 bytes**, **one A4 page**, SHA-256 `83e7cb6f8a48e9088048d422511bdda726103bf840b9d0a88333256cbfcc723a`.
+- `problem-page-1.png`: rendered from that actual PDF using PDFium, opened with the image viewer and visually read through by Codex. Hungarian accents, statement/input constraints, file/resource limits, both sample I/O pairs, unverified notice and footer are readable; no clipping or private data was observed. This is Codex inspection of a synthetic PDF, not manual teacher correctness approval or browser/UI proof.
+
+Temporary render tools were installed separately:
+
+```bash
+UV_CACHE_DIR=/tmp/cca006-uv-cache uv venv --python /tmp/cca006-venv/bin/python /tmp/cca007-pdf-review
+UV_CACHE_DIR=/tmp/cca006-uv-cache uv pip install --python /tmp/cca007-pdf-review/bin/python pypdfium2==5.14.0 pillow==12.3.0
+```
+
+The fixture generation used `PYTHONPATH=tests:src /tmp/cca006-venv/bin/python` with the trusted `draft_data`/`approved_challenge` fixture factories and `build_challenge_package`; the two example inputs were `1 2` and `-5 3`, outputs `3` and `-2`. `/tmp/cca007-pdf-review/bin/python` rendered every PDF page with `document[index].render(scale=1.4)`. The template and fixture code are trusted application/test code; generated source was never imported/executed. PDFium/Pillow are external inspection tools, not added dependencies or shipped renderer code.
+
+### Corrected failures and limits
+
+- The initial package/archive run passed **129**, failed **1** because a PDF assertion expected the literal status `unverified` while the initial text said `not independently verified`. The PDF now prints explicit `Status: unverified` to match the manifest/header and avoid ambiguity.
+- The first page-cap regression run passed **131**, failed **1**: ReportLab annotates exceptions by constructing another instance with a message, which is incompatible with the fixed-code `PackageError` constructor. The page hook now raises a compatible internal `PageLimit` and translates it to the fixed `package_size` at the document boundary. Both page and byte cap tests pass; no bound was relaxed.
+- Initial Ruff findings were import order/long literal formatting; fixed before final checks. Missing Hungarian long-accent glyphs in ReportLab's bundled Vera font were observed before implementation, so supported packaged DejaVu fonts were chosen instead of silently substituting glyphs.
+- The public/student manifest now uses the same 64 KiB manifest cap as the judge manifest. Expected outputs in both public/private tests must satisfy the declared byte bound. Unexpected export exceptions never echo source, key, path or PDF content.
+
+The final diff is restricted to CCA-007 implementation/contracts, its tests/font notices and current status/evidence documentation. Final audit confirmed 12 edited tracked paths, 9 new paths, exact SPDX headers in 5 new Python source/test files, 90 resolving local Markdown links and preserved CRLF in 11 edited existing files. The worktree credential-pattern scan found no matches; the Git index is empty. `git -c core.whitespace=cr-at-eol diff HEAD --check` exited 0. Final wheel application/font/notice bytes match current sources, and upstream font binaries are unchanged. The implementation review ended without a commit. After separate user commit approval, the exact 21-path scope, SPDX/font notices, worktree credential-pattern scan, wheel/source equality, lint and formatting were checked again before staging. Only these intended paths are included in the approved commit; no push is authorized.
+
+**Not run:** live Ollama/OpenRouter or billable calls, actual generated-reference/contestant execution, new sandbox qualification/Docker build, independent challenge correctness review, manual teacher UI/download flow, polished Streamlit authoring/review integration, complex-script shaping/universal Unicode, durable/multi-process workflow recovery, hosted CI/public deployment, independent security/legal audit. Existing Release 0.1 sandbox evidence remains historical and separate. CCA-008 remains Planned.

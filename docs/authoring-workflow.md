@@ -1,6 +1,6 @@
 # Bounded authoring workflow — CCA-006
 
-CCA-006 adds a **teacher-only backend** LangGraph workflow alongside the existing one-call CCA-005 preview. It uses the same [configured models](model-configuration.md), strict `TaskDraft` schema and qualified offline worker. The Streamlit workflow/review UI, independent correctness review and student/teacher exports are still planned. No live model or generated-reference execution was verified for this story; see [release evidence](releases/release-0.2-ai-challenge-authoring/verification.md).
+CCA-006 adds a **teacher-only backend** LangGraph workflow alongside the existing one-call CCA-005 preview. It uses the same [configured models](model-configuration.md), strict `TaskDraft` schema and qualified offline worker. The Streamlit workflow/review UI and independent correctness review are still planned. CCA-007 adds separate [approved student/teacher exports](challenge-packages.md) through the backend API. No live model or generated-reference execution was verified for this story; see [release evidence](releases/release-0.2-ai-challenge-authoring/verification.md).
 
 ## Flow and trust boundary
 
@@ -60,7 +60,7 @@ Review request:
 
 `action` is `approve`, `revise` or `reject`. Only `revise` requires nonblank `revision`; approval/rejection accept only absent/empty revision text. A revision consumes another generation attempt and returns a **new** review ID. Approval/rejection ends the graph and clears the ID. Old, repeated, cross-workflow or terminal review decisions return 409 `stale_review` without repeating effects. Exhausted revision budgets return 409 `revision_budget`; invalid approval returns 409 `approval_blocked`. Unknown/expired workflows return 404. Running/full workflows return safe 503 errors. Successful previews/decisions/deletion and workflow error responses use `Cache-Control: no-store`.
 
-Approval acknowledges the reviewable draft, including any visible mismatch, skipped checks or uncertainty; **it does not establish correctness, independently verify tests, accept official contest tests, publish anything or enable export**. `verification` remains `unverified` after approval. The final teacher verification/export rules belong to later stories.
+Approval acknowledges the reviewable draft, including any visible mismatch, skipped checks or uncertainty; **it does not establish correctness, independently verify tests, accept official contest tests or publish anything**. `verification` remains `unverified` after approval. CCA-007 allows the approved materials to be downloaded as separate student/teacher packages with this explicit status. Final independent teacher verification and the polished UI remain CCA-008 scope.
 
 ## Reference checking
 

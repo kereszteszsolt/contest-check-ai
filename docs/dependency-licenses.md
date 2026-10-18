@@ -1,5 +1,13 @@
 # Dependency license inventory
 
+## CCA-007 embedded PDF fonts (2026-10-18)
+
+Python dependency pins/lockfile and worker dependencies are unchanged. The public challenge PDF uses unmodified **DejaVu Sans / DejaVu Sans Mono 2.37** TTF files, copied from the local `fonts-dejavu-core 2.37-8build1` distribution into `src/contest_check/assets/fonts/`. The font files retain the **Bitstream Vera license** copyright/trademark/permission/disclaimer notice, with DejaVu changes in the public domain. The full applicable upstream font notice is in `LICENSE-DejaVu.txt`, retained in the built Python wheel and copied into every student ZIP as `FONT-LICENSE.txt`. The unrelated Debian packaging files/license section was not copied; no Debian packaging code is vendored. See the [upstream font license](https://dejavu-fonts.github.io/License.html).
+
+SHA-256: `DejaVuSans.ttf` = `b4c632e3cdf9acc7f28758fb5a323c8524d7fc6660d46904d9b6cbe2809c419c`; `DejaVuSansMono.ttf` = `a54dca07c76d6289e717e75e0a58c0128f6d7269ef3faf76417c9d7d3bba37ab`. Copied bytes match their installed upstream originals. The application's own source remains Apache-2.0; these font files are third-party assets with their own terms. This targeted notice review is not an independent legal/security audit. No font download, system font discovery or remote fetch occurs during PDF generation.
+
+PDFium **5.14.0** and Pillow **12.3.0** were installed only in `/tmp/cca007-pdf-review` to render a synthetic PDF for Codex visual inspection; they were not added to the application/test lockfile or worker. The existing results-report renderer still uses its original Helvetica path. See [package contracts](challenge-packages.md) and [release evidence](releases/release-0.2-ai-challenge-authoring/verification.md).
+
 ## CCA-006 LangGraph additions (2026-10-18)
 
 The API adds the direct pin `langgraph==1.2.16`, with locked `langgraph-checkpoint==4.3.0`, `langgraph-prebuilt==1.1.1`, `langgraph-sdk==0.4.8` and `ormsgpack==1.13.0`. Installed distribution metadata and retained notices were inspected: the four LangGraph distributions are MIT and each retains its LICENSE; ormsgpack declares **Apache-2.0 OR MIT** and retains both LICENSE-APACHE and LICENSE-MIT.
