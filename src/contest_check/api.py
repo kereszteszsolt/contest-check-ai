@@ -4,7 +4,7 @@
 import threading
 from typing import Annotated, Literal
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, Header, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 from starlette.concurrency import run_in_threadpool
@@ -13,15 +13,36 @@ from starlette.exceptions import HTTPException
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from contest_check.archives import DEFAULT_LIMITS, InvalidUpload, validated_workspace
+from contest_check.authoring_contracts import (
+    MAX_AUTHORING_REQUEST_BYTES,
+    DraftRequest,
+    DraftResponse,
+    ModelCatalog,
+)
+from contest_check.authoring_workflow import WorkflowStore
+from contest_check.challenge_packages import build_challenge_package
 from contest_check.judging import judge_archives
+from contest_check.model_configuration import ModelSettings, ProviderError, load_model_settings
 from contest_check.models import UploadError, ValidationSummary
+from contest_check.package_contracts import Audience, PackageError, PackageOptions
+from contest_check.providers import GenerationSession
 from contest_check.reports import MAX_REPORT_REQUEST_BYTES, MIME_TYPES, ReportLimit, build_report
 from contest_check.results import BatchResult
 from contest_check.worker_transport import DockerWorker, configured
+from contest_check.workflow_contracts import (
+    OpaqueID,
+    ReviewRequest,
+    WorkflowFailure,
+    WorkflowPreview,
+    WorkflowRequest,
+)
 
 MAX_REQUEST_BYTES = 2 * DEFAULT_LIMITS.archive_bytes + 65_536
 JUDGE_SLOT = threading.BoundedSemaphore(1)
 REPORT_SLOT = threading.BoundedSemaphore(1)
+AUTHORING_SLOT = threading.BoundedSemaphore(1)
+PACKAGE_SLOT = threading.BoundedSemaphore(1)
+WORKFLOWS = WorkflowStore()
 UPLOAD_BODY = {
     "requestBody": {
         "required": True,
@@ -54,12 +75,28 @@ class BoundedUploadBody:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         report = scope.get("path", "").startswith("/api/reports/")
+        authoring = scope.get("path", "").startswith("/api/authoring/")
         if scope["type"] != "http" or (
-            not report and scope["path"] not in {"/api/validate", "/api/judge"}
+            not (report or authoring) and scope["path"] not in {"/api/validate", "/api/judge"}
         ):
             await self.app(scope, receive, send)
             return
+        if authoring:
+            original_send = send
+
+            async def no_store_send(message):
+                if message["type"] == "http.response.start":
+                    message["headers"] = [
+                        (key, value)
+                        for key, value in message.get("headers", [])
+                        if key.lower() != b"cache-control"
+                    ] + [(b"cache-control", b"no-store")]
+                await original_send(message)
+
+            send = no_store_send
         maximum = MAX_REPORT_REQUEST_BYTES if report else MAX_REQUEST_BYTES
+        if authoring:
+            maximum = MAX_AUTHORING_REQUEST_BYTES
         headers = dict(scope["headers"])
         try:
             length = int(headers.get(b"content-length", b"0"))
@@ -120,10 +157,47 @@ async def request_validation_handler(request: Request, exc: RequestValidationErr
     return error_response("request", "Request does not match the API contract.", 422)
 
 
+@app.exception_handler(WorkflowFailure)
+async def workflow_failure_handler(request: Request, exc: WorkflowFailure):
+    response = error_response(exc.code, exc.message, exc.status)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
 @app.get("/health")
 def health():
     # This is operator configuration, never a saved sandbox qualification.
     return {"status": "ok", "execution_enabled": configured()}
+
+
+def get_model_settings() -> ModelSettings:
+    return load_model_settings()
+
+
+@app.get("/api/authoring/models", response_model=ModelCatalog)
+def authoring_models(
+    response: Response, settings: Annotated[ModelSettings, Depends(get_model_settings)]
+):
+    response.headers["Cache-Control"] = "no-store"
+    return settings.catalog()
+
+
+@app.post("/api/authoring/draft", response_model=DraftResponse)
+async def authoring_draft(
+    request: DraftRequest,
+    response: Response,
+    settings: Annotated[ModelSettings, Depends(get_model_settings)],
+):
+    response.headers["Cache-Control"] = "no-store"
+    if not AUTHORING_SLOT.acquire(blocking=False):
+        return error_response("authoring_busy", "Another draft is being prepared. Try later.", 503)
+    try:
+        session = GenerationSession(settings, request.model_slot)
+        return await session.generate(request.instructions)
+    except ProviderError as error:
+        return error_response(error.code, error.message, error.status)
+    finally:
+        AUTHORING_SLOT.release()
 
 
 def validate_pair(task_zip: bytes, submissions_zip: bytes) -> ValidationSummary:
@@ -175,6 +249,134 @@ async def read_uploads(request: Request) -> list[bytes] | JSONResponse:
 
 def get_worker():
     return DockerWorker() if configured() else None
+
+
+def get_workflow_store():
+    return WORKFLOWS
+
+
+@app.post("/api/authoring/workflows", response_model=WorkflowPreview)
+async def create_authoring_workflow(
+    request: WorkflowRequest,
+    response: Response,
+    settings: Annotated[ModelSettings, Depends(get_model_settings)],
+    store: Annotated[WorkflowStore, Depends(get_workflow_store)],
+    worker: Annotated[object, Depends(get_worker)],
+    creation_id: Annotated[OpaqueID | None, Header(alias="Idempotency-Key")] = None,
+):
+    response.headers["Cache-Control"] = "no-store"
+    if not AUTHORING_SLOT.acquire(blocking=False):
+        raise WorkflowFailure("workflow_busy")
+    judge_acquired = False
+    try:
+        if creation_id is not None:
+            existing = store.existing_creation(creation_id, request)
+            if existing is not None:
+                return existing.preview()
+        if request.run_reference_tests and worker is not None:
+            judge_acquired = JUDGE_SLOT.acquire(blocking=False)
+            if not judge_acquired:
+                raise WorkflowFailure("workflow_busy")
+        try:
+            workflow = store.create(
+                request,
+                settings,
+                worker if request.run_reference_tests else None,
+                workflow_id=creation_id,
+            )
+        except ProviderError as error:
+            return error_response(error.code, error.message, error.status)
+        try:
+            return await workflow.start()
+        except BaseException:
+            store.discard(workflow.workflow_id)
+            raise
+    finally:
+        if judge_acquired:
+            JUDGE_SLOT.release()
+        AUTHORING_SLOT.release()
+
+
+@app.get("/api/authoring/workflows/{workflow_id}", response_model=WorkflowPreview)
+def preview_authoring_workflow(
+    workflow_id: OpaqueID,
+    response: Response,
+    store: Annotated[WorkflowStore, Depends(get_workflow_store)],
+):
+    response.headers["Cache-Control"] = "no-store"
+    return store.get(workflow_id).preview()
+
+
+@app.post("/api/authoring/workflows/{workflow_id}/review", response_model=WorkflowPreview)
+async def review_authoring_workflow(
+    workflow_id: OpaqueID,
+    request: ReviewRequest,
+    response: Response,
+    store: Annotated[WorkflowStore, Depends(get_workflow_store)],
+):
+    response.headers["Cache-Control"] = "no-store"
+    if not AUTHORING_SLOT.acquire(blocking=False):
+        raise WorkflowFailure("workflow_busy")
+    judge_acquired = False
+    try:
+        workflow = store.get(workflow_id)
+        if (
+            request.action == "revise"
+            and workflow.request.run_reference_tests
+            and workflow.worker is not None
+        ):
+            judge_acquired = JUDGE_SLOT.acquire(blocking=False)
+            if not judge_acquired:
+                raise WorkflowFailure("workflow_busy")
+        return await workflow.resume(request)
+    finally:
+        if judge_acquired:
+            JUDGE_SLOT.release()
+        AUTHORING_SLOT.release()
+
+
+@app.delete("/api/authoring/workflows/{workflow_id}", status_code=204)
+def delete_authoring_workflow(
+    workflow_id: OpaqueID,
+    store: Annotated[WorkflowStore, Depends(get_workflow_store)],
+):
+    store.discard(workflow_id)
+    return Response(status_code=204, headers={"Cache-Control": "no-store"})
+
+
+@app.post("/api/authoring/workflows/{workflow_id}/packages/{audience}", response_class=Response)
+async def export_challenge_package(
+    workflow_id: OpaqueID,
+    audience: Audience,
+    options: PackageOptions,
+    store: Annotated[WorkflowStore, Depends(get_workflow_store)],
+):
+    if not PACKAGE_SLOT.acquire(blocking=False):
+        return error_response("package_busy", PackageError.ERRORS["package_busy"][1], 503)
+    try:
+        preview = store.get(workflow_id).preview()
+        try:
+            content = await run_in_threadpool(
+                build_challenge_package, audience, preview.state, options
+            )
+        except PackageError as error:
+            return error_response(error.code, error.message, error.status)
+        except Exception:
+            return error_response("package_failed", PackageError.ERRORS["package_failed"][1], 503)
+        return Response(
+            content,
+            media_type="application/zip",
+            headers={
+                "Content-Disposition": (
+                    f'attachment; filename="{preview.state.draft.task_id}-{audience}.zip"'
+                ),
+                "Cache-Control": "no-store",
+                "X-Content-Type-Options": "nosniff",
+                "X-Challenge-Verification": "unverified",
+            },
+        )
+    finally:
+        PACKAGE_SLOT.release()
 
 
 @app.post(

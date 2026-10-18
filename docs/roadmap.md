@@ -1,6 +1,6 @@
 # Roadmap
 
-The project has **two independently verifiable releases**. Release 0.1 is implemented and locally verified; Release 0.2 remains **Planned**. A story plan is not proof of implementation or user permission to start. The linked verification records define actual evidence and limitations.
+The project has two independently verifiable releases. CCA-001–004 are implemented with local host-specific judge evidence; CCA-005–008 have mocked authoring/real graph/UI/artifact evidence. CCA-009 local Docker deployment is explicitly requested and in progress. A story plan is not proof of implementation or authorization; linked verification records state actual results and limitations.
 
 ## Release 0.1 — Automated Python Judge
 
@@ -21,10 +21,11 @@ Objective: create a teacher-reviewed challenge draft from natural-language instr
 
 | Story | Scope | Status |
 | --- | --- | --- |
-| [CCA-005](releases/release-0.2-ai-challenge-authoring/stories/CCA-005-configured-llm-providers.md) | Six allowed model slots, Pydantic and bounded LLM adapter | Planned |
-| [CCA-006](releases/release-0.2-ai-challenge-authoring/stories/CCA-006-langgraph-generation-and-tools.md) | LangGraph state, generation tools, reference validation | Planned |
-| [CCA-007](releases/release-0.2-ai-challenge-authoring/stories/CCA-007-student-teacher-artifact-packages.md) | PDF statement, samples/starters, separate private tests | Planned |
-| [CCA-008](releases/release-0.2-ai-challenge-authoring/stories/CCA-008-teacher-approval-and-verification.md) | HITL UX, approval gating, tests, docs and evidence | Planned |
+| [CCA-005](releases/release-0.2-ai-challenge-authoring/stories/CCA-005-configured-llm-providers.md) | Six allowed model slots, Pydantic and bounded LLM adapter | Implemented; mocked provider/API/UI evidence |
+| [CCA-006](releases/release-0.2-ai-challenge-authoring/stories/CCA-006-langgraph-generation-and-tools.md) | LangGraph state, generation tools, reference validation | Implemented; mocked models/workers and actual graph |
+| [CCA-007](releases/release-0.2-ai-challenge-authoring/stories/CCA-007-student-teacher-artifact-packages.md) | PDF statement, samples/starters, separate private tests | Implemented; synthetic ZIP/PDF/API checks |
+| [CCA-008](releases/release-0.2-ai-challenge-authoring/stories/CCA-008-teacher-approval-and-verification.md) | HITL UX, approval gating, tests, docs and evidence | Implemented; mocked providers, actual UI/API and local browser |
+| [CCA-009](releases/release-0.2-ai-challenge-authoring/stories/CCA-009-local-docker-deployment.md) | Local Docker UI/API and isolated Linux judge execution | In progress; base mode runs, API socket approval pending |
 
 **Dependency:** Release 0.2 generated reference code cannot run until the Release 0.1 sandbox has been verified. An unsupported sandbox must block release acceptance, not induce a bypass.
 

@@ -1,8 +1,8 @@
-# Archive contracts — CCA-001 inputs / planned Release 0.2 exports
+# Archive contracts — judge inputs / CCA-007 exports
 
 ## Initial judge inputs
 
-**Teacher task ZIP** contains one challenge with `challenge/task-config.json` and exactly the declared `challenge/tests/<test_id>.in` / `<test_id>.out` pairs. CCA-001 validates/extracts the pair; CCA-003 connects it to a separately qualified worker through an explicitly configured local API. See [judging.md](judging.md).
+**Teacher task ZIP** contains one challenge with `challenge/task-config.json` and exactly the declared `challenge/tests/<test_id>.in` / `<test_id>.out` pairs. CCA-007 also permits the fixed private metadata pair `teacher/README.md` and `teacher/checks.json`, optionally accompanied by `teacher/reference/main.py`; they must appear together and are ignored by judging, never executed or treated as qualification. Legacy task ZIPs without metadata remain supported. No other extra paths are accepted. CCA-001 validates/extracts the pair; CCA-003 connects it to a separately qualified worker through an explicitly configured local API. See [judging.md](judging.md).
 
 ### Task manifest v0.1
 
@@ -62,7 +62,7 @@ Errors describe invalid uploads, never cheating or disqualification. The API ret
 
 ## Release 0.2 exports
 
-The **student ZIP** has `problem.pdf`, `README.md`, `examples/sample.in`, `examples/sample.out`, `starter/main.py` and a public manifest. The **teacher ZIP**, downloaded separately, contains the judge-ready private tests/expected outputs, metadata and teacher-reviewed reference solution. Teacher approval is required before either export.
+The **student ZIP** has `problem.pdf`, `README.md`, `student-manifest.json`, `FONT-LICENSE.txt`, at least `examples/sample.in` / `examples/sample.out` (up to ten sequential pairs) and `starter/main.py`. Its public fields exclude generated starter/reference source, private tests, warnings and check logs. The **teacher ZIP**, downloaded separately, contains `challenge/task-config.json`, its declared private test pairs, `teacher/README.md`, `teacher/checks.json` and optionally `teacher/reference/main.py` on an explicit teacher review assertion. This teacher archive can be uploaded directly to the judge. Teacher approval is required before either export; correctness remains `unverified`. Both use the same strict path/type/size/nested-archive validator without extraction. See [complete package/API contracts](challenge-packages.md).
 
 Starter code intentionally does only safe file I/O according to the task filenames. It is not an answer/solution to the algorithmic task.
 

@@ -121,8 +121,11 @@ def free_port():
 def serve(port):
     import uvicorn
 
+    from contest_check import api
     from contest_check.api import app, get_worker
 
+    # Advertise the fixed fixture worker to the real UI, without enabling Docker.
+    api.configured = lambda: True
     app.dependency_overrides[get_worker] = OfflineWorker
     uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
 

@@ -1,0 +1,81 @@
+name: contest-check-ai
+
+x-runtime: &runtime
+  image: contest-check-app:local
+  build:
+    context: .
+    dockerfile: deploy/app/Dockerfile
+    target: app
+  user: "1000:1000"
+  init: true
+  read_only: true
+  cap_drop: [ALL]
+  security_opt:
+    - no-new-privileges:true
+  pids_limit: 128
+  mem_limit: 1g
+  memswap_limit: 1g
+  cpus: 1.0
+  tmpfs:
+    - /tmp:rw,nosuid,nodev,noexec,size=134217728,mode=1777
+    - /home/contest:rw,nosuid,nodev,noexec,size=8388608,mode=0700,uid=1000,gid=1000
+  restart: unless-stopped
+
+services:
+  # Visible even between jobs: inspect prerequisites once, then retain the stopped container.
+  # This never consumes submitted code or replaces per-job sandbox qualification.
+  judge-worker:
+    extends:
+      file: deploy/worker/compose.yaml
+      service: judge-worker
+    command: ["--check"]
+    stdin_open: false
+  api:
+    <<: *runtime
+    depends_on:
+      judge-worker:
+        condition: service_completed_successfully
+    environment:
+      # Docker deployment deliberately has no judge transport or daemon socket.
+      JUDGE_EXECUTION_ENABLED: "false"
+      JUDGE_REVIEWED_PROFILE: "false"
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL_1: ${OLLAMA_MODEL_1:-}
+      OLLAMA_MODEL_2: ${OLLAMA_MODEL_2:-}
+      OLLAMA_MODEL_3: ${OLLAMA_MODEL_3:-}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL_1: ${OPENROUTER_MODEL_1:-}
+      OPENROUTER_MODEL_2: ${OPENROUTER_MODEL_2:-}
+      OPENROUTER_MODEL_3: ${OPENROUTER_MODEL_3:-}
+      AI_MAX_CALLS_PER_GENERATION: ${AI_MAX_CALLS_PER_GENERATION:-6}
+      AI_REQUEST_TIMEOUT_SECONDS: ${AI_REQUEST_TIMEOUT_SECONDS:-60}
+      AI_MAX_OUTPUT_TOKENS: ${AI_MAX_OUTPUT_TOKENS:-4096}
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - "127.0.0.1:${API_PORT:-43872}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+  web:
+    <<: *runtime
+    command: ["streamlit", "run", "streamlit_app.py", "--server.address", "0.0.0.0", "--server.port", "8501"]
+    ports:
+      - "127.0.0.1:${APP_PORT:-43871}:8501"
+    environment:
+      API_HOST: "api"
+      API_PORT: "8000"
+    depends_on:
+      api:
+        condition: service_healthy
+        restart: true
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s

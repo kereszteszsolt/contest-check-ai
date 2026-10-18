@@ -6,6 +6,7 @@ import os
 import httpx
 import streamlit as st
 
+from contest_check.authoring_ui import leave_authoring, show_authoring
 from contest_check.models import UploadError, ValidationSummary
 from contest_check.presentation import (
     DQ_COLUMNS,
@@ -22,10 +23,31 @@ from contest_check.results import BatchResult
 
 
 def local_api_url() -> str:
+    host = os.environ.get("API_HOST", "127.0.0.1")
+    if host not in {"127.0.0.1", "api"}:
+        raise ValueError("API_HOST must be loopback or the local Compose API service.")
     port = int(os.environ.get("API_PORT", "8000"))
     if not 1 <= port <= 65_535:
         raise ValueError("API_PORT must be between 1 and 65535.")
-    return f"http://127.0.0.1:{port}"
+    return f"http://{host}:{port}"
+
+
+def judge_execution_setting() -> bool | None:
+    """Read operator intent only; each worker still qualifies before execution."""
+    try:
+        with httpx.Client(base_url=local_api_url(), timeout=3, trust_env=False) as client:
+            response = client.get("/health")
+        response.raise_for_status()
+        value = response.json()
+        if (
+            isinstance(value, dict)
+            and value.get("status") == "ok"
+            and type(value.get("execution_enabled")) is bool
+        ):
+            return value["execution_enabled"]
+    except (httpx.HTTPError, ValueError):
+        pass
+    return None
 
 
 def clear_results() -> None:
@@ -54,8 +76,8 @@ def service_message(response: httpx.Response) -> str:
         error = UploadError.model_validate(response.json())
         if error.code == "execution_disabled":
             return (
-                "Solution execution is not configured. "
-                "Ask the local operator to enable the verified worker."
+                "Solution execution is disabled. Archive validation is available; "
+                "ask the local operator to enable isolated judging."
             )
         return error.message
     except ValueError:
@@ -234,7 +256,14 @@ def show_results(batch: BatchResult) -> None:
 def main() -> None:
     st.set_page_config(page_title="ContestCheck AI", page_icon="📦", layout="wide")
     st.title("ContestCheck AI")
-    st.caption("Check anonymous Python submissions against private file-based tests.")
+    workspace = st.sidebar.radio("Workspace", ["Judge submissions", "AI task draft"])
+    if workspace == "AI task draft":
+        st.caption("Draft a Python challenge, review it and export student and teacher packages.")
+        show_authoring(local_api_url())
+        return
+    leave_authoring()
+    st.caption("Validate anonymous Python submissions and test them against private test cases.")
+    execution_enabled = judge_execution_setting()
     st.session_state.setdefault("validation_status", "idle")
     st.session_state.setdefault("judge_status", "idle")
     st.session_state.setdefault("reports", {})
@@ -261,7 +290,7 @@ def main() -> None:
         validate(task, submissions)
     if st.session_state["validation_status"] == "validated":
         summary = st.session_state["validation_summary"]
-        st.success("Archives validated. Temporary validation files have been removed.")
+        st.success("Both archives passed validation.")
         st.text(f"Task: {summary['task_id']}")
         st.text(f"Tests: {summary['test_count']} · Participants: {len(summary['participant_ids'])}")
         st.text("Participant IDs: " + ", ".join(summary["participant_ids"]))
@@ -269,10 +298,17 @@ def main() -> None:
         st.error(st.session_state["validation_error"])
     else:
         st.info("Upload both archives and validate them before running solutions.")
+    if execution_enabled is False:
+        st.info("Solution execution is disabled. You can still upload and validate archives.")
+    elif execution_enabled is None:
+        st.warning("Cannot confirm the judge status. Check the local API and refresh the page.")
+    else:
+        st.caption("Isolated judging is enabled. Each worker checks its sandbox before running.")
     if st.button(
         "Run solutions",
         type="primary",
-        disabled=st.session_state["validation_status"] != "validated"
+        disabled=execution_enabled is not True
+        or st.session_state["validation_status"] != "validated"
         or task is None
         or submissions is None,
     ):

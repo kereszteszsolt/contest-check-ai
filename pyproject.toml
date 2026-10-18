@@ -9,6 +9,11 @@ authors = [{ name = "Keresztes Zsolt" }]
 dependencies = [
     "fastapi==0.143.3",
     "httpx==0.28.1",
+    "langchain-core==1.6.12",
+    "langchain-ollama==1.1.0",
+    "langchain-openrouter==0.2.9",
+    "langgraph==1.2.16",
+    "langsmith==0.14.11",
     "pydantic==2.14.1",
     "python-multipart==0.0.32",
     "reportlab==5.0.1",

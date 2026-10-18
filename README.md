@@ -5,11 +5,11 @@
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-D22128?style=flat-square)](LICENSE)
 ![Status: In development](https://img.shields.io/badge/status-in_development-64748b?style=flat-square)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square)
-![LangGraph](https://img.shields.io/badge/LangGraph-planned-1F2937?style=flat-square)
+![LangGraph](https://img.shields.io/badge/LangGraph-1.2.16-1F2937?style=flat-square)
 
-**ContestCheck AI** is a self-hosted **automated Python judge** for teachers, programming competitions and independent practice, with AI-assisted challenge authoring planned. A local teacher can upload an anonymous submissions archive, check solutions against defined file-based tests, inspect per-test outcomes and runtimes, and download PDF/XLSX reports. An optional LangChain/LangGraph authoring workflow will later draft problem statements, examples, starter code and private test cases for teacher approval.
+**ContestCheck AI** is a self-hosted **automated Python judge** for teachers, programming competitions and independent practice, with optional AI-assisted challenge drafting. A local teacher can upload an anonymous submissions archive, check solutions against defined file-based tests, inspect per-test outcomes and runtimes, and download PDF/XLSX reports. An optional Streamlit/LangChain/LangGraph workflow drafts problem statements, examples, starter code and private tests for teacher review. Teachers can request bounded revisions, explicitly approve or reject, then download separate student/teacher ZIPs. Generated content still requires independent teacher review.
 
-> **Current state: Release 0.1 / CCA-001–004 implemented and locally verified.** Streamlit provides validation, judging, anonymous per-test results and PDF/XLSX downloads. The local API requires explicit operator configuration and a separately qualified offline worker for every test, with a fresh time budget and automatic cleanup. Real Docker/WSL2 sandbox evidence and mocked-worker browser/report checks are recorded separately. **Release 0.2 AI authoring remains planned.** See [local setup](docs/local-development.md), [judging/policy](docs/judging.md), [UI/reports](docs/verdicts-and-reporting.md), [worker boundaries](docs/judge-worker.md), and [actual verification](docs/releases/release-0.1-automated-judge/verification.md). Public deployment and universal safety are not claimed.
+> **Current state: Releases 0.1 / CCA-001–004 and 0.2 / CCA-005–008 are implemented with local evidence.** The judge requires explicit operator settings and a separately qualified offline worker. Release 0.2 has configured model adapters, bounded LangGraph checkpoints, teacher review and separate ZIP/PDF exports through Streamlit. Authoring tests use mocked model/worker responses; a separate CCA-009 deployment smoke also passed two real isolated reference checks from a fixed benign draft. Actual graph, API, UI and artifact behavior is exercised. No live model, generated-reference execution or independent challenge correctness review is claimed. Historical Docker/WSL2 sandbox evidence, current authoring checks and their limits are recorded separately in [Release 0.1 evidence](docs/releases/release-0.1-automated-judge/verification.md) and [Release 0.2 evidence](docs/releases/release-0.2-ai-challenge-authoring/verification.md). See [local setup](docs/local-development.md), [models](docs/model-configuration.md), [workflow](docs/authoring-workflow.md), [packages](docs/challenge-packages.md), [judging](docs/judging.md) and [worker boundaries](docs/judge-worker.md). Hosted CI/public deployment are not verified.
 
 ## What will users do?
 
@@ -25,12 +25,12 @@
 
 1. Describe the algorithmic challenge in plain language and choose a configured Ollama or OpenRouter model.
 2. A bounded LangGraph workflow drafts a challenge specification, sample inputs/outputs, starter Python file, reference solution and private tests.
-3. The system attempts validation using the **same proven judge sandbox** and shows warnings and limitations to the teacher.
-4. The teacher can **approve, revise or reject** before exporting: (a) a **student ZIP** with `problem.pdf`, sample `.in`/`.out` and starter source; (b) a separate **teacher ZIP** with private tests and reference material.
+3. Schema validation always runs. Explicitly requested reference checks use the separately qualified offline sandbox; unavailable checks remain blocked and visible.
+4. The teacher can **approve, revise or reject** before exporting: (a) a **student ZIP** with `problem.pdf`, sample `.in`/`.out` and starter source; (b) a separate **teacher ZIP** with private tests and an optional independently reviewed reference. Approval leaves correctness explicitly **unverified**.
 
 These are **two complementary workflows**, not a student account portal or automatic grading by a language model.
 
-## Planned architecture
+## Implemented local architecture
 
 ```mermaid
 flowchart TB
@@ -45,8 +45,13 @@ flowchart TB
     Graph --> Models{Explicitly selected provider}
     Models --> Ollama[Host Ollama]
     Models --> OpenRouter[OpenRouter API]
-    Graph --> Approval[Teacher review / approval]
-    Approval --> Packages[Separate student and teacher ZIPs]
+    Graph -->|Opt-in reference checks| Judge
+    Graph --> Review[Checkpoint and teacher preview]
+    Review --> UI
+    UI -->|Explicit revise / approve / reject| API
+    Graph --> Approved{Teacher approved?}
+    Approved -->|Yes| Packages[Separate student and teacher ZIPs]
+    Approved -->|Reject| Closed[No final packages]
     API --> Reports
 ```
 
@@ -68,25 +73,25 @@ flowchart LR
 
 The initial checker uses a documented text comparison rule for file-based I/O. Results describe **observed runtime under stated limits**; they do not prove theoretical algorithm complexity. Test passing does not imply the software is safe or cheat-proof.
 
-## Intended technology stack
+## Implemented technology stack
 
 | Layer | Technology / purpose |
 | --- | --- |
 | Language & packaging | **Python 3.12**, `uv` or equivalent pinned dependencies |
 | Frontend | **Streamlit** — uploads, model selection, tables, review and downloads |
 | Backend | **FastAPI** + **Pydantic** for validation/orchestration |
-| AI authoring (0.2) | **LangChain**, **LangGraph**, Tool Calling, Human-in-the-Loop |
+| AI authoring (0.2) | **langchain-core**, Ollama/OpenRouter adapters, **LangGraph** checkpoints and two fixed checking nodes; explicit teacher decisions |
 | Model providers (0.2) | **Ollama** locally, **OpenRouter** optionally; up to 3 configured models each |
-| Code execution (0.1) | Separate **offline sandboxed Linux judge** (NsJail candidate; subject to validation) |
+| Code execution (0.1) | Separate **offline sandboxed Linux judge** (NsJail/Kafel, mandatory qualification in every worker process) |
 | Initial solution language | **Python**; C, C++ and Free Pascal considered later |
-| Documents & exports | **ReportLab** PDF, **openpyxl** XLSX, standard ZIP archives |
+| Documents & exports | **ReportLab** PDF, **XlsxWriter** XLSX, standard ZIP archives; **pypdf/openpyxl** are test readers |
 | Tests | **pytest**, isolated security/runner integration checks |
-| Deployment | **Docker Compose**, with web/API/worker separation and no public judge endpoint |
-| Database | **None for MVP** — bounded temporary workspaces; optional small local checkpoint persistence later |
+| Deployment | Native setup or local **Docker Compose UI/API**; optional trusted API judge override; separate offline one-shot worker |
+| Database | **No application database** — temporary judge workspaces; session-bound process-local `InMemorySaver` authoring checkpoints (deleted on UI disconnect/workspace exit; at most one hour, lost on restart) |
 
 Python dependencies are pinned in `pyproject.toml` and `uv.lock`; see the [dependency license inventory](docs/dependency-licenses.md). The [CCA-002 worker guide](docs/judge-worker.md) documents the pinned NsJail/Kafel build, reviewed Docker profile, Linux host requirements and actual integration evidence. It is a separate one-shot service, with no public worker endpoint.
 
-## Proposed archive contracts
+## Archive contracts
 
 **Teacher task package** (input to the Release 0.1 judge):
 
@@ -116,7 +121,7 @@ submissions.zip
 
 A task manifest defines the entry filename, input/output filenames and test limits. The runnable code may have supporting same-folder source files, but may not read arbitrary paths or create unexpected outputs. The task and submission archive structure is documented in [Archive contracts](docs/archive-contracts.md).
 
-**Challenge authoring will produce two different archives:** a student ZIP with `problem.pdf`, starter file, example `.in`/`.out` and a teacher ZIP with hidden tests and reference solution. Hidden expected outputs must never appear in the student ZIP.
+**Approved challenge drafts produce two different archives through Streamlit or the API:** a student ZIP with `problem.pdf`, fixed file-I/O starter and example `.in`/`.out`, and a teacher ZIP with hidden tests and an optionally included, independently reviewed reference. Hidden expected outputs must never appear in the student ZIP.
 
 ## Results and review
 
@@ -145,7 +150,7 @@ OPENROUTER_MODEL_3=
 
 Empty model slots do not appear in the UI. Cloud calls require configured server-side credentials and explicit user selection; no surprise fallback or unbounded loop. **Only selected prompts and draft materials** are sent to the chosen LLM. Student submissions are not automatically uploaded to an LLM. Refer to [Model configuration](docs/model-configuration.md).
 
-## Local setup — archive validation only
+## Local setup — validation and challenge authoring
 
 Install dependencies, then start the API and UI in separate terminals from the repository root:
 
@@ -156,7 +161,15 @@ uv run --frozen uvicorn contest_check.api:app --host 127.0.0.1 --port 8000 --lim
 uv run --frozen streamlit run streamlit_app.py --server.port 8501
 ```
 
-Open <http://127.0.0.1:8501>. Use `uv run --frozen python scripts/make_demo_archives.py` to create inert validation fixtures in `.runtime/demo/`; their comment-only sources are not correct solutions. For judging, first follow [judging.md](docs/judging.md) to build/qualify the worker and start the API with both explicit operator settings. Then upload, validate, run, review the tables and prepare/download PDF/XLSX reports. `.env` is not loaded automatically. The [development guide](docs/local-development.md) documents actual native services and the worker-only Compose layout.
+Open <http://127.0.0.1:8501>. For authoring, configure only the API environment and follow the [teacher workflow](docs/authoring-workflow.md#streamlit-teacher-workflow). Use `uv run --frozen python scripts/make_demo_archives.py` to create inert validation fixtures in `.runtime/demo/`; their comment-only sources are not correct solutions. For judging, first follow [judging.md](docs/judging.md) to build/qualify the worker and start the API with both explicit operator settings. Then upload, validate, run, review the tables and prepare/download PDF/XLSX reports. `.env` is not loaded automatically. The [development guide](docs/local-development.md) documents native services and the optional local Compose deployment.
+
+## Local Docker setup — CCA-009
+
+```bash
+docker compose up -d --build --wait
+```
+
+Open <http://127.0.0.1:43871>; API health is <http://127.0.0.1:43872/health>. These project-specific host ports are configurable with `APP_PORT`/`API_PORT`; existing `.env` entries must be updated separately. Internal container ports remain unchanged. Compose reads model settings from the ignored root `.env` and gives credentials only to API. **Default mode disables code execution.** The optional reviewed judge mode uses separate offline Linux/NsJail workers and requires explicit approval for the trusted API's Docker administration access. That access was approved and the local end-to-end benign judge/export/cleanup smoke passed on 2026-10-18. Web, API and a stopped prerequisite-check worker remain grouped in one project; extra per-test workers join during execution and are deleted afterward. Web/API each publish only their own port; use the documented two-file Compose command to retain judge mode on restart. See [Docker setup and operator checks](docs/local-development.md#docker-deployment--cca-009), [CCA-009](docs/releases/release-0.2-ai-challenge-authoring/stories/CCA-009-local-docker-deployment.md) and [evidence](docs/releases/release-0.2-ai-challenge-authoring/verification.md). No live model call occurs at startup.
 
 ## Roadmap, stories and verification
 
@@ -164,9 +177,9 @@ Open <http://127.0.0.1:8501>. Use `uv run --frozen python scripts/make_demo_arch
 | --- | --- |
 | [Roadmap](docs/roadmap.md) | Release scope and ordering |
 | [Release 0.1 – Automated Judge](docs/releases/release-0.1-automated-judge/README.md) | Four Python judge/reporting stories |
-| [Release 0.2 – AI Challenge Authoring](docs/releases/release-0.2-ai-challenge-authoring/README.md) | Four LangChain/LangGraph authoring stories |
+| [Release 0.2 – AI Challenge Authoring](docs/releases/release-0.2-ai-challenge-authoring/README.md) | Authoring stories and CCA-009 local Docker deployment |
 | [Release 0.1 verification](docs/releases/release-0.1-automated-judge/verification.md) | CCA-001–004 checks, browser/report artifacts and host-specific sandbox evidence |
-| [Release 0.2 verification](docs/releases/release-0.2-ai-challenge-authoring/verification.md) | Currently `Not run` |
+| [Release 0.2 verification](docs/releases/release-0.2-ai-challenge-authoring/verification.md) | CCA-005–008 authoring evidence and CCA-009 Docker checks/approval boundary |
 | [Architecture](docs/architecture.md) | UI, orchestration, worker, agents and diagrams |
 | [Archive contracts](docs/archive-contracts.md) | Task/submission/student/teacher ZIP schemas |
 | [Security and sandbox](docs/security-and-sandbox.md) | Critical execution safeguards and fail-closed gates |
@@ -177,7 +190,7 @@ Open <http://127.0.0.1:8501>. Use `uv run --frozen python scripts/make_demo_arch
 | [Story workflow](docs/story-workflow.md) | Separate implementation/commit approval |
 | [Future ideas](docs/future.md) | Languages, scoring and features not yet committed |
 
-See [AGENTS.md](AGENTS.md) for the repository's mandatory workflow and source-license convention. CCA-001–004 are implemented; Release 0.2 stories require separate implementation approval.
+See [AGENTS.md](AGENTS.md) for the repository's mandatory workflow and source-license convention. CCA-001–008 are implemented with the evidence and limitations above; any new story requires separate implementation approval.
 
 ## License
 

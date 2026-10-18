@@ -126,3 +126,23 @@ def report_batch():
             ],
         }
     )
+
+
+@pytest.fixture
+def draft_data():
+    return {
+        "task_id": "addition",
+        "title": "Addition",
+        "statement": "Read two integers from input.txt and write their sum to output.txt.",
+        "language": "python",
+        "entry_file": "main.py",
+        "input_filename": "input.txt",
+        "output_filename": "output.txt",
+        "comparison": "tokens",
+        "limits": {"time_seconds": 0.5, "memory_mb": 128, "output_bytes": 1024},
+        "examples": [{"input": "1 2\n", "output": "3\n", "explanation": "Add both integers."}],
+        "starter_source": "# INERT_STARTER\n",
+        "reference_source": "# INERT_REFERENCE\n",
+        "private_tests": [{"test_id": "t1", "input": "3 4\n", "expected_output": "7\n"}],
+        "warnings": ["Synthetic, unverified fixture."],
+    }

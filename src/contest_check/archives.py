@@ -18,6 +18,10 @@ from pathlib import Path
 from pydantic import ValidationError
 
 from contest_check.models import TaskManifest, ValidationSummary
+from contest_check.package_contracts import StudentManifest
+
+TEACHER_METADATA = frozenset({"teacher/README.md", "teacher/checks.json"})
+TEACHER_REFERENCE = "teacher/reference/main.py"
 
 
 @dataclass(frozen=True)
@@ -149,6 +153,8 @@ def _read_payload(archive: zipfile.ZipFile, data: bytes, info: zipfile.ZipInfo) 
 
 
 def _read_archive(data: bytes, kind: str, limits: ArchiveLimits) -> dict[str, bytes]:
+    if kind not in {"task", "submissions", "student"}:
+        reject("archive_layout", "Unsupported archive format.")
     _check_directory(data, limits)
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
@@ -183,7 +189,7 @@ def _read_archive(data: bytes, kind: str, limits: ArchiveLimits) -> dict[str, by
                     continue
                 cap = (
                     limits.manifest_bytes
-                    if path == "challenge/task-config.json"
+                    if path in {"challenge/task-config.json", "student-manifest.json"}
                     else limits.file_bytes
                 )
                 if info.file_size > cap or info.compress_size > limits.archive_bytes:
@@ -194,9 +200,22 @@ def _read_archive(data: bytes, kind: str, limits: ArchiveLimits) -> dict[str, by
                 if info.file_size > max(1, info.compress_size) * limits.compression_ratio:
                     reject("compression_ratio", "ZIP entry exceeds the compression ratio limit.")
                 if kind == "task":
-                    allowed = path == "challenge/task-config.json" or re.fullmatch(
-                        r"challenge/tests/[A-Za-z0-9][A-Za-z0-9_-]{0,31}\.(in|out)", path
+                    allowed = (
+                        path == "challenge/task-config.json"
+                        or re.fullmatch(
+                            r"challenge/tests/[A-Za-z0-9][A-Za-z0-9_-]{0,31}\.(in|out)", path
+                        )
+                        or path in TEACHER_METADATA
+                        or path == TEACHER_REFERENCE
                     )
+                elif kind == "student":
+                    allowed = path in {
+                        "problem.pdf",
+                        "README.md",
+                        "student-manifest.json",
+                        "starter/main.py",
+                        "FONT-LICENSE.txt",
+                    } or re.fullmatch(r"examples/sample(?:-0[2-9]|-10)?\.(in|out)", path)
                 else:
                     allowed = re.fullmatch(
                         r"(0|[1-9][0-9]{0,15})/[A-Za-z_][A-Za-z0-9_]{0,63}\.py", path
@@ -277,9 +296,43 @@ def _manifest(files: dict[str, bytes], limits: ArchiveLimits) -> TaskManifest:
                 reject(
                     "test_output_size", "Expected test output exceeds the manifest output limit."
                 )
-    if set(files) != required:
+    extra = set(files) - required
+    if extra and not (
+        TEACHER_METADATA <= extra and extra <= TEACHER_METADATA | {TEACHER_REFERENCE}
+    ):
+        reject("task_tests", "Task ZIP contains unsupported or incomplete teacher metadata.")
+    if not required <= files.keys():
         reject("task_tests", "Task ZIP must contain exactly the declared input/output test pairs.")
     return manifest
+
+
+def validate_export_archive(data: bytes, audience: str) -> None:
+    """Apply the ingestion safety checks to generated ZIP bytes, without extraction."""
+    if audience == "teacher":
+        _manifest(_read_archive(data, "task", DEFAULT_LIMITS), DEFAULT_LIMITS)
+        return
+    if audience != "student":
+        reject("archive_layout", "Unsupported archive format.")
+    files = _read_archive(data, "student", DEFAULT_LIMITS)
+    try:
+        manifest = StudentManifest.model_validate(
+            json.loads(files["student-manifest.json"].decode(), object_pairs_hook=_unique_json)
+        )
+    except (KeyError, ValueError, UnicodeError, RecursionError):
+        reject("manifest", "Student manifest does not match the documented schema.")
+    required = {
+        "problem.pdf",
+        "README.md",
+        "student-manifest.json",
+        "starter/main.py",
+        "FONT-LICENSE.txt",
+    }
+    for pair in manifest.examples:
+        required.update((pair.input_file, pair.output_file))
+        if len(files.get(pair.output_file, b"")) > manifest.limits.output_bytes:
+            reject("test_output_size", "Example output exceeds the task output limit.")
+    if set(files) != required:
+        reject("archive_layout", "Student ZIP must contain exactly its declared public files.")
 
 
 @dataclass(frozen=True)

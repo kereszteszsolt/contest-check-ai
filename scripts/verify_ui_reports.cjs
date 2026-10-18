@@ -23,7 +23,7 @@ async function showFromTop(locator) {
 }
 
 (async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, executablePath: process.env.CCA_BROWSER_EXECUTABLE || undefined });
   let page;
   try {
     const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true });
@@ -50,7 +50,7 @@ async function showFromTop(locator) {
     await uploads.nth(1).setInputFiles(path.join(fixtures, 'submissions.zip'));
     await expect(page.getByText('Upload must be a complete, supported ZIP archive.', { exact: true })).toHaveCount(0);
     await page.getByRole('button', { name: 'Validate archives', exact: true }).click();
-    await expect(page.getByText('Archives validated. Temporary validation files have been removed.', { exact: true })).toBeVisible();
+    await expect(page.getByText('Both archives passed validation.', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Run solutions', exact: true }).click();
     await expect(page.getByText('Running solutions…', { exact: true })).toBeVisible();
     await page.screenshot({ path: path.join(output, 'running-desktop.png'), fullPage: true });
@@ -81,7 +81,7 @@ async function showFromTop(locator) {
     await expect(page.getByRole('heading', { name: 'Results', exact: true })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Run solutions', exact: true })).toBeDisabled();
     await page.getByRole('button', { name: 'Validate archives', exact: true }).click();
-    await expect(page.getByText('Archives validated. Temporary validation files have been removed.', { exact: true })).toBeVisible();
+    await expect(page.getByText('Both archives passed validation.', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Run solutions', exact: true }).click();
     await expect(page.getByText('The batch stopped after a judge system error. Not-run tests are not participant failures.', { exact: true })).toBeVisible({ timeout: 30000 });
     await page.screenshot({ path: path.join(output, 'incomplete-desktop.png'), fullPage: true });

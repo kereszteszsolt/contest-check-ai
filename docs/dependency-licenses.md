@@ -1,4 +1,40 @@
-# Dependency license inventory — CCA-001
+# Dependency license inventory
+
+## CCA-009 Docker application images (2026-10-18)
+
+The application image installs the unchanged locked Python distributions, retaining their installed notices and bundled DejaVu license, on the same digest-pinned CPython/Debian base as the worker. Build-only uv 0.11.29 is copied from its exact official image digest; it is absent from the final application images. The optional trusted judge API target adds only the **Docker CLI 29.6.1** binary from the digest-pinned official `docker:29.6.1-cli` image. Its original [Apache-2.0 license and Docker copyright notice](https://github.com/docker/cli/blob/v29.6.1/LICENSE) are retained in `deploy/app/LICENSE-Docker-CLI.txt` and `/usr/share/doc/docker-cli/LICENSE` in that image. Docker CLI source and its Go dependency notices remain upstream; no binary is vendored in Git or image published. The full Alpine CLI image/daemon/plugins are not copied into the Python application image. This local build is not an independent redistribution/legal audit; review all component obligations before external image distribution.
+
+## CCA-007 embedded PDF fonts (2026-10-18)
+
+Python dependency pins/lockfile and worker dependencies are unchanged. The public challenge PDF uses unmodified **DejaVu Sans / DejaVu Sans Mono 2.37** TTF files, copied from the local `fonts-dejavu-core 2.37-8build1` distribution into `src/contest_check/assets/fonts/`. The font files retain the **Bitstream Vera license** copyright/trademark/permission/disclaimer notice, with DejaVu changes in the public domain. The full applicable upstream font notice is in `LICENSE-DejaVu.txt`, retained in the built Python wheel and copied into every student ZIP as `FONT-LICENSE.txt`. The unrelated Debian packaging files/license section was not copied; no Debian packaging code is vendored. See the [upstream font license](https://dejavu-fonts.github.io/License.html).
+
+SHA-256: `DejaVuSans.ttf` = `b4c632e3cdf9acc7f28758fb5a323c8524d7fc6660d46904d9b6cbe2809c419c`; `DejaVuSansMono.ttf` = `a54dca07c76d6289e717e75e0a58c0128f6d7269ef3faf76417c9d7d3bba37ab`. Copied bytes match their installed upstream originals. The application's own source remains Apache-2.0; these font files are third-party assets with their own terms. This targeted notice review is not an independent legal/security audit. No font download, system font discovery or remote fetch occurs during PDF generation.
+
+PDFium **5.14.0** and Pillow **12.3.0** were installed only in `/tmp/cca007-pdf-review` to render a synthetic PDF for Codex visual inspection; they were not added to the application/test lockfile or worker. The existing results-report renderer still uses its original Helvetica path. See [package contracts](challenge-packages.md) and [release evidence](releases/release-0.2-ai-challenge-authoring/verification.md).
+
+## CCA-006 LangGraph additions (2026-10-18)
+
+The API adds the direct pin `langgraph==1.2.16`, with locked `langgraph-checkpoint==4.3.0`, `langgraph-prebuilt==1.1.1`, `langgraph-sdk==0.4.8` and `ormsgpack==1.13.0`. Installed distribution metadata and retained notices were inspected: the four LangGraph distributions are MIT and each retains its LICENSE; ormsgpack declares **Apache-2.0 OR MIT** and retains both LICENSE-APACHE and LICENSE-MIT.
+
+The required SDK declares `websockets>=14,<17`, so the resolver changes the existing web/API transitive dependency from **17.2 to 16.1.1**; its BSD-3-Clause LICENSE is retained. All other pre-existing locked package versions are unchanged. The application uses the local StateGraph/InMemorySaver, not an SDK remote client or hosted LangGraph service. Tracing is explicitly disabled. No dependency is vendored/modified or image published; the offline worker dependency group, requirements and isolation are unchanged. These notices remain component-specific; this is not a new security/legal audit. See [workflow contracts](authoring-workflow.md) and [release evidence](releases/release-0.2-ai-challenge-authoring/verification.md).
+
+## CCA-005 model adapter additions (2026-10-17)
+
+Existing versions remain unchanged. The following new Linux web/API dependencies were resolved with exact direct pins and a hashed lockfile. Installed distribution metadata and retained license files were inspected; this inventory is not a complete security/legal audit of future bundles.
+
+| New component(s), exact installed version | Package license / retained notices |
+| --- | --- |
+| langchain-core 1.6.12, langchain-ollama 1.1.0, langchain-openrouter 0.2.9, langchain-protocol 0.0.19, langsmith 0.14.11, ollama 0.6.3 | MIT; each installed distribution retains its LICENSE |
+| openrouter 0.10.8, distro 1.9.0, requests-toolbelt 1.0.0, tenacity 9.2.1 | Apache-2.0; installed license texts retained |
+| httpx2 2.13.1, httpcore2 2.13.1, jsonpatch 1.35, jsonpointer 3.2.1, uuid-utils 0.17.1, zstandard 0.25.0 | BSD-3-Clause; jsonpatch/jsonpointer also retain AUTHORS |
+| jsonpath-python 1.1.6, PyYAML 6.0.3, truststore 0.10.5 | MIT |
+| sniffio 1.3.1 | MIT OR Apache-2.0; both notices retained |
+| xxhash 4.0.1 | BSD-2-Clause |
+| orjson 3.13.0 | **MPL-2.0 AND (Apache-2.0 OR MIT)**; LICENSE-MPL-2.0, LICENSE-APACHE and LICENSE-MIT are all retained |
+
+`httpx2-jsfetch==1.0` is an Emscripten-only conditional lock entry; it is not installed or redistributed in this Linux verification environment and its installed notices were not inspected. Browser/WASM deployment is not supported or verified here. The application itself continues to use HTTPX 0.28.1 for guarded provider requests; HTTPX2 is a separate LangSmith transitive dependency. LangSmith tracing is explicitly disabled, not an enabled runtime service.
+
+All new packages are installed from upstream distributions, without vendoring or modification. ContestCheck's own source remains Apache-2.0; third-party notices/terms remain component-specific, including the orjson MPL components. No new image/binary bundle is published; review and preserve corresponding component/source obligations before later redistribution. The separate offline worker image/dependency group is unchanged and receives no model libraries or credentials. See [model configuration](model-configuration.md) and [Release 0.2 evidence](releases/release-0.2-ai-challenge-authoring/verification.md).
 
 ## CCA-004 reporting additions (2026-10-17)
 
