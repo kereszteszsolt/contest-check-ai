@@ -598,3 +598,32 @@ Ignored evidence: `.runtime/branding-20261019/` contains `browser-results.json`,
 ### Commit authorization and review — 2026-10-19
 
 The user explicitly requested committing the ContestCheck changes. The reviewed scope includes the shared branding catalog/artwork, expanded workspace sidebar and attribution, navbar/About, packaged assets, UI regression coverage, loopback 33080/33081 ports, manual-only restart rules and related documentation. No application behavior changed after the preceding 50-test/browser/runtime proof; those checks were not repeated solely for the commit. Ruff check, formatting (94 files), both quiet Compose configuration checks and whitespace checks passed again. Before staging, the index was empty; current source/artwork hashes match the recorded deployed evidence. The commit review also checks the exact pending path set, ignored private environment/runtime files, absence of actual local credential values, preserved line endings and staged blobs against the reviewed bytes. The user's authorization covers the local commit only.
+
+## 2026-10-19 — Separate About and common UI styles
+
+The user authorized the same stylesheet cleanup as CiteNook after identifying ContestCheck's mixed `branding.css`. Its dialog/link/tooltip rules now live in `src/contest_check/assets/about.css`, while navbar/sidebar/shared attribution rules live in `src/contest_check/assets/styles.css`. `branding.py` loads common styles before About styles in the existing trusted local renderer. The Docker build-context allowlist names only these two CSS assets in place of the old filename; metadata, artwork, dependency pins and application behavior are unchanged. The repository was clean before this change; no commit or push was requested.
+
+A selector/media/declaration comparison confirms the same **143 scoped CSS declarations** before and after the split. Using the preceding read-only, network-disabled Python 3.12 Docker test wrapper, `python -m pytest -q -p no:cacheprovider tests/test_ui.py` passed **31 tests in 12.60s**, including the existing About/report-preservation regression. `python -m ruff check --no-cache src/contest_check/branding.py` and `python -m ruff format --check --no-cache src/contest_check/branding.py` passed. The initial format check requested joining one generator line; this formatting-only correction was applied before the final image build. Original CRLF in the Docker allowlist and this verification file was preserved; whitespace checks passed.
+
+```bash
+docker compose -f compose.yaml -f compose.judge.yaml build web
+docker compose -f compose.yaml -f compose.judge.yaml up -d --no-deps --no-build --wait --wait-timeout 90 web
+python3 /tmp/contest-brand-check/style-split-audit.py
+# The preceding browser-tools Docker wrapper, with:
+# node /checks/style-split-review.mjs
+git -c core.whitespace=cr-at-eol diff HEAD --check
+```
+
+Only the web container was recreated, and it is healthy on 127.0.0.1:33080 with restart policy `no`. Package SHA-256 checks match the exact current loader, both new CSS files, metadata, icon and poster; the obsolete `assets/branding.css` is absent from the installed wheel. API and prerequisite-worker container IDs/images/states are unchanged. No worker qualification, submitted-code execution or live model generation was started.
+
+All four fresh Chromium contexts passed against the rebuilt web service without injected CSS: 1440×1000 light/dark, 390×844 and 320×740. The existing checks cover expanded/collapsible sidebar/footer placement, icon/favicon/poster, native About layout/links/tooltips and dismissal, selected workspace and typed Topic preservation, and viewport bounds. Page errors and external browser requests remained zero. Desktop dark and narrow-phone About captures were visually inspected. Results and screenshots remain local under `/tmp/contest-brand-check/style-split-*`. The focused UI tests and deployed browser checks apply to this CSS cleanup; the full backend suite and model/worker evaluations were not repeated.
+
+## 2026-10-19 — Function-based consumer names and one root metadata source
+
+The user explicitly limited this naming cleanup to CiteNook, ContestCheck, OpenNook, LocalNook, StonePlan and StoryCheck. Root `brand/` is the editable data/artwork source; consuming modules, components, scripts, styles, tests and guides use their function. The rule is recorded in `AGENTS.md`. The six source catalogs and all artwork were checked by SHA-256 against the task-start snapshot (25 JSON/artwork files unchanged). Existing unrelated pending changes and historical result fixtures were retained. No commit or push was requested.
+
+Renamed `src/contest_check/branding.py` to `app_shell.py`, with function-specific configuration loading and shell/About helpers. UI keys/selectors identify app identity, About links and common styles. The prior About/common CSS split is retained. Hatch copies the unchanged root JSON to packaged `assets/app-info/app-info.json` and artwork to its asset directory; there is no second source catalog. The installed wheel contains no obsolete `branding.py` or `assets/brand` directory.
+
+The existing network-disabled Python 3.12 test wrapper ran `pytest -q -p no:cacheprovider tests/test_ui.py tests/test_authoring_ui.py`: 50 passed. Ruff check/format passed for `app_shell.py` and `ui.py`; an initial import-order finding was corrected before the final image. Only the web service was rebuilt/refreshed with the existing judge Compose override. API and prerequisite-worker container IDs/images/states remain unchanged. Four deployed desktop light/dark and 390/320px Chromium contexts passed, including metadata/artwork, expanded sidebar/footer, About/tooltips, preserved Topic/workspace and zero page errors/external browser requests.
+
+Cross-repository proof: **540 unit/API tests and 56 browser cases/scenarios passed**. Scoped filename/local-link/whitespace checks and the deployed source/asset/container audit passed. Local helper scripts, build/deploy logs, summaries and captures remain under `/tmp/app-ui-naming/`; they are not committed. Database containers and named mounts were preserved; untouched services retained their original policies. No live/paid model generation, new indexing or submitted-code execution was run. Hosted CI/public deployment and other browser engines were not tested.

@@ -1,0 +1,29 @@
+/* SPDX-FileCopyrightText: 2026 Keresztes Zsolt <https://kereszteszsolt.hu>
+ * SPDX-License-Identifier: Apache-2.0 */
+
+[data-testid="stDialog"]:has(.cca-about) { align-items: center; padding: 1rem; }
+[data-testid="stDialog"]:has(.cca-about) > div { box-sizing: border-box; width: min(42rem, 100%); min-width: 0; max-width: 100%; max-height: 100%; margin: 0; border-radius: 1.1rem; }
+[data-testid="stDialog"] [role="dialog"]:has(.cca-about) { width: 100%; min-width: 0; max-height: calc(100dvh - 2rem - 2px); margin: 0; border-radius: 1.1rem; overflow-y: auto; }
+.cca-poster { display: block; width: 100%; height: auto; border-radius: .8rem; }
+.cca-about p.cca-about-description { margin: 1rem 0 1.2rem; text-align: center; font-size: .875rem; line-height: 1.65; }
+.cca-about-links { position: relative; display: flex; flex-wrap: wrap; justify-content: center; gap: .55rem; }
+.cca-support-links { margin-top: .6rem; }
+.cca-about-link { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; padding: .55rem .75rem; border: 1px solid color-mix(in srgb, currentColor 18%, transparent); border-radius: .5rem; background: color-mix(in srgb, currentColor 6%, transparent); color: inherit !important; font-size: .8rem; font-weight: 600; text-decoration: none !important; }
+.cca-about-link > svg { flex: none; }
+.cca-about-link:hover { border-color: currentColor; }
+.cca-about-link:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.cca-coffee { background: #f5cf78; color: #63384b !important; border-color: #d5a858; }
+.cca-tooltip { display: none; position: absolute; bottom: calc(100% + .65rem); left: 50%; transform: translateX(-50%); z-index: 2; width: max-content; max-width: min(24rem, 100%); padding: .7rem .85rem; border-radius: .55rem; color: #fffdf6; background: #63384b; box-shadow: 0 4px 20px #0003; font-size: .75rem; font-weight: 400; line-height: 1.6; overflow-wrap: anywhere; pointer-events: none; }
+.cca-tooltip::after { content: ""; position: absolute; bottom: -.4rem; left: 50%; transform: translateX(-50%); border-top: .45rem solid #63384b; border-inline: .45rem solid transparent; }
+.cca-tooltip > span { display: block; }
+.cca-tooltip > span + span { margin-top: .3rem; font-weight: 600; }
+.cca-about-link:hover .cca-tooltip, .cca-about-link:focus .cca-tooltip { display: block; }
+.cca-support-note { display: flex; align-items: center; gap: .75rem; margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid color-mix(in srgb, currentColor 16%, transparent); font-size: .75rem; line-height: 1.7; }
+.cca-support-note > svg { flex: none; color: #ba8a34; }
+.cca-support-note p { margin: 0; }
+.cca-about .cca-attribution { margin-top: 1.1rem; text-align: center; }
+@media (max-width: 640px) {
+  [data-testid="stDialog"]:has(.cca-about) { padding: .5rem; }
+  [data-testid="stDialog"] [role="dialog"]:has(.cca-about) { max-height: calc(100dvh - 1rem - 2px); }
+  .cca-about-link { padding: .5rem .6rem; font-size: .75rem; }
+}

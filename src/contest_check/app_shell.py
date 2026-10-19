@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 Keresztes Zsolt <https://kereszteszsolt.hu>
 # SPDX-License-Identifier: Apache-2.0
 
-"""Local display branding shared by the Streamlit shell and About dialog."""
+"""Streamlit application shell, About dialog and local display configuration."""
 
 import base64
 import json
@@ -15,36 +15,37 @@ from urllib.parse import urlsplit
 import streamlit as st
 
 PACKAGE_ASSETS = Path(__file__).resolve().parent / "assets"
-PACKAGED_BRAND = PACKAGE_ASSETS / "brand"
-BRAND_DIRECTORY = (
-    PACKAGED_BRAND
-    if (PACKAGED_BRAND / "branding.json").is_file()
-    else Path(__file__).resolve().parents[2] / "brand"
+PACKAGED_APP_INFO = PACKAGE_ASSETS / "app-info"
+APP_INFO_PATH = (
+    PACKAGED_APP_INFO / "app-info.json"
+    if (PACKAGED_APP_INFO / "app-info.json").is_file()
+    else Path(__file__).resolve().parents[2] / "brand" / "branding.json"
 )
+APP_INFO_DIRECTORY = APP_INFO_PATH.parent
 LICENSE_URL = "https://www.apache.org/licenses/LICENSE-2.0"
 
 
 @lru_cache(maxsize=1)
-def load_brand() -> dict:
-    return json.loads((BRAND_DIRECTORY / "branding.json").read_text(encoding="utf-8"))
+def load_app_info() -> dict:
+    return json.loads(APP_INFO_PATH.read_text(encoding="utf-8"))
 
 
 @lru_cache(maxsize=3)
 def asset_uri(field: str) -> str:
-    name = load_brand().get(field, "")
+    name = load_app_info().get(field, "")
     if not name:
         return ""
     if not re.fullmatch(r"assets/[A-Za-z0-9_-]+\.(svg|png|ico)", name):
-        raise ValueError("Brand artwork must be a local file inside brand/assets.")
+        raise ValueError("Application artwork must be a local file inside brand/assets.")
     image_type = {".svg": "svg+xml", ".png": "png", ".ico": "x-icon"}[Path(name).suffix]
-    content = base64.b64encode((BRAND_DIRECTORY / name).read_bytes()).decode("ascii")
+    content = base64.b64encode((APP_INFO_DIRECTORY / name).read_bytes()).decode("ascii")
     return f"data:image/{image_type};base64,{content}"
 
 
 def attribution_html(*, website: bool = True) -> str:
-    brand = load_brand()
-    author = escape(brand["authorName"])
-    site = brand["authorWebsite"]
+    app_info = load_app_info()
+    author = escape(app_info["authorName"])
+    site = app_info["authorWebsite"]
     website_link = ""
     if website and site:
         label = escape(urlsplit(site).netloc + urlsplit(site).path.rstrip("/"))
@@ -88,13 +89,13 @@ def icon(kind: str) -> str:
 
 
 def about_link(field: str, label: str, description: str, kind: str) -> str:
-    href = load_brand().get(field, "")
+    href = load_app_info().get(field, "")
     if not href:
         return ""
     if urlsplit(href).scheme != "https":
-        raise ValueError("Brand links must use HTTPS.")
+        raise ValueError("About links must use HTTPS.")
     tooltip_id = f"cca-tip-{field}"
-    css = "cca-brand-link cca-coffee" if kind == "coffee" else "cca-brand-link"
+    css = "cca-about-link cca-coffee" if kind == "coffee" else "cca-about-link"
     return (
         f'<a class="{css}" href="{escape(href, quote=True)}" target="_blank" '
         f'rel="noopener noreferrer" aria-describedby="{tooltip_id}">{icon(kind)}{escape(label)}'
@@ -104,10 +105,10 @@ def about_link(field: str, label: str, description: str, kind: str) -> str:
 
 
 def about_html() -> str:
-    brand = load_brand()
-    author = brand["authorName"]
-    languages = " | ".join(brand["authorWebsiteLanguages"])
-    website = urlsplit(brand["authorWebsite"]).netloc
+    app_info = load_app_info()
+    author = app_info["authorName"]
+    languages = " | ".join(app_info["authorWebsiteLanguages"])
+    website = urlsplit(app_info["authorWebsite"]).netloc
     project_links = "".join(
         [
             about_link(
@@ -117,7 +118,7 @@ def about_html() -> str:
                 "globe",
             ),
             about_link("appWebsite", "Project website", "Visit the project website.", "globe"),
-            about_link("appGithubUrl", "Source", f"Source code for {brand['appName']}.", "code"),
+            about_link("appGithubUrl", "Source", f"Source code for {app_info['appName']}.", "code"),
             about_link("authorGithub", "GitHub profile", f"Explore {author}'s projects.", "user"),
         ]
     )
@@ -141,37 +142,36 @@ def about_html() -> str:
     return (
         '<div class="cca-about">'
         f'<img class="cca-poster" src="{poster}" '
-        f'alt="{escape(brand["appName"], quote=True)} project poster" width="780" height="480">'
-        f'<p class="cca-about-description">{escape(brand["appDescription"])}</p>'
+        f'alt="{escape(app_info["appName"], quote=True)} project poster" width="780" height="480">'
+        f'<p class="cca-about-description">{escape(app_info["appDescription"])}</p>'
         f'<nav class="cca-about-links" aria-label="Project and author links">{project_links}</nav>'
         '<nav class="cca-about-links cca-support-links" aria-label="Support the author">'
         f"{support_links}</nav>"
         f'<div class="cca-support-note" role="note">{icon("info")}'
-        f"<p>{escape(brand['supportRemarkText'])}</p></div>"
+        f"<p>{escape(app_info['supportRemarkText'])}</p></div>"
         f"{attribution_html(website=False)}</div>"
     )
 
 
-@st.dialog(f"About {load_brand()['appName']}", width="medium", position="center")
+@st.dialog(f"About {load_app_info()['appName']}", width="medium", position="center")
 def show_about() -> None:
     st.markdown(about_html(), unsafe_allow_html=True)
 
 
 def render_shell() -> None:
-    brand = load_brand()
+    app_info = load_app_info()
     st.set_page_config(
-        page_title=brand["appName"],
+        page_title=app_info["appName"],
         page_icon=asset_uri("appFavicon"),
         layout="wide",
         initial_sidebar_state="expanded",
     )
     # This Streamlit version strips style/SVG tags from st.html. Keep trusted
     # local styles in Markdown; uploaded content never enters this renderer.
-    st.markdown(
-        '<style id="cca-brand-styles">'
-        f"{(PACKAGE_ASSETS / 'branding.css').read_text(encoding='utf-8')}</style>",
-        unsafe_allow_html=True,
+    styles = "\n".join(
+        (PACKAGE_ASSETS / name).read_text(encoding="utf-8") for name in ("styles.css", "about.css")
     )
+    st.markdown(f'<style id="cca-app-styles">{styles}</style>', unsafe_allow_html=True)
     with st.container(
         key="app_navbar",
         horizontal=True,
@@ -180,7 +180,7 @@ def render_shell() -> None:
         wrap=False,
     ):
         with st.container(
-            key="app_brand",
+            key="app_identity",
             horizontal=True,
             width="content",
             vertical_alignment="center",
@@ -192,7 +192,7 @@ def render_shell() -> None:
                 'alt="" width="40" height="40">',
                 width=40,
             )
-            st.title(brand["appName"], anchor=False)
+            st.title(app_info["appName"], anchor=False)
         if st.button("About", key="about_dialog", type="tertiary"):
             show_about()
 

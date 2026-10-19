@@ -52,3 +52,7 @@ For Python/shell use `#`, for JS/TS use `//`, for HTML use `<!-- ... -->`, etc. 
 ## Docker runtime rules
 
 Use the GitHub repository name as the Compose project: `contest-check-ai`, including standalone worker commands. Publish every host port only on `127.0.0.1`, above 33000, with no port shared by another repository. The current allocation is 33080 for web and 33081 for API. Set `restart: "no"` for every service and disable dependency-triggered restarts. Preserve existing data/model volumes when changing a project name or recreating containers.
+
+## App metadata and implementation names
+
+The only source directory named `brand` is the repository-root `brand/`, containing the editable JSON catalog and artwork. Name consuming modules, components, styles, scripts and tests for their function, such as app info, app assets, About, tooltips or author attribution. Do not create implementation files/directories or CSS selectors named brand/branding. Public/generated asset copies use app-assets or app-info names; keep source JSON fields, artwork and storage identifiers intact.

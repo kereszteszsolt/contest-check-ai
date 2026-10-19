@@ -6,8 +6,8 @@ import os
 import httpx
 import streamlit as st
 
+from contest_check.app_shell import render_shell, render_sidebar_footer
 from contest_check.authoring_ui import leave_authoring, show_authoring
-from contest_check.branding import render_shell, render_sidebar_footer
 from contest_check.models import UploadError, ValidationSummary
 from contest_check.presentation import (
     DQ_COLUMNS,
