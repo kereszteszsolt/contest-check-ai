@@ -7,6 +7,7 @@ import httpx
 import streamlit as st
 
 from contest_check.authoring_ui import leave_authoring, show_authoring
+from contest_check.branding import render_shell, render_sidebar_footer
 from contest_check.models import UploadError, ValidationSummary
 from contest_check.presentation import (
     DQ_COLUMNS,
@@ -254,9 +255,9 @@ def show_results(batch: BatchResult) -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="ContestCheck AI", page_icon="📦", layout="wide")
-    st.title("ContestCheck AI")
+    render_shell()
     workspace = st.sidebar.radio("Workspace", ["Judge submissions", "AI task draft"])
+    render_sidebar_footer()
     if workspace == "AI task draft":
         st.caption("Draft a Python challenge, review it and export student and teacher packages.")
         show_authoring(local_api_url())

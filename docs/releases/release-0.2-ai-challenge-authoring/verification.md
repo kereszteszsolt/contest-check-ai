@@ -537,3 +537,64 @@ Final review: Ruff passed, **92 files already formatted**, JavaScript syntax and
 The user explicitly requested committing these fixes. The reviewed 21-path CCA-009 scope includes worker visibility/grouping, separate project ports and web/API networking, judge-status copy/gating, regression/operator checks and documentation. Application source is unchanged since the full **571 passed** result and real Docker/browser/reference checks above; those tests were not repeated solely for the commit. Ruff, formatting (**92 files**), JavaScript syntax, both quiet Compose configuration checks and whitespace checks passed again. Before staging, the index was empty; reviewed local links, line endings, ignored `.env`/runtime artifacts and absence of local credential values are rechecked. Staged contents must match the reviewed normalized bytes. Commit approval does not include a push or live model call.
 
 The initial staged whitespace check without explicit line-ending options reported CRLF-only noise. Repeating with `git -c core.autocrlf=true -c core.safecrlf=false -c core.whitespace=cr-at-eol diff --cached --check` uses the reviewed normalization; staged blob hashes are checked independently against the reviewed LF bytes. Worktree line endings are preserved.
+
+
+## 2026-10-19 — Shared branding, expanded workspace menu, navbar and manual Docker restarts
+
+The user clarified that the target is **ContestCheck AI (`contest-check-ai`)**, then explicitly requested an expanded menu, a navbar and another Docker restart. The existing OpenNook/StoryCheck/StonePlan/LocalNook presentation pattern is adapted to ContestCheck, without adding an authoring workflow or changing judge behavior. Existing pending port/manual-restart edits and the supplied branding/posters were retained; no commit/push was requested.
+
+`brand/branding.json` supplies the navbar name, local SVG app icon/favicon, About poster/description/links/support notice and sidebar author details. The new vector icon uses the original poster's cream/plum/coral code sheet, judge stamp and mint accepted check; original SVG/PNG posters are preserved. The workspace menu starts expanded with its native collapse control. Copyright uses the current server year, author and Apache-2.0 on one line, with the website below. The native About dialog follows the supplied examples, with centered project/support link rows, keyboard tooltips containing descriptions/full URLs, a voluntary-support note and centered attribution. About has a plain text navbar button with no info icon.
+
+The pinned Streamlit HTML sanitizer removed stylesheet/inline SVG tags in initial browser checks. Only trusted local styles and escaped branding markup now use Markdown's HTML renderer; uploaded/generated content never enters it, and JavaScript is not enabled. Native image/heading/button/dialog controls are retained. Actual browser checks also found and corrected the sidebar footer's layout wrapper, icon clipping, and the native modal's outer/mobile width and margins. CSS changes are scoped to the branding elements and About dialog. Hatch packages the existing metadata/artwork and CSS into the wheel; Docker keeps its strict build-context allowlist. Dependency pins/lockfile and session/disconnect cleanup are unchanged.
+
+### Commands and results
+
+WSL2, Docker, CPython 3.12.13 and installed Streamlit 1.66.0. Temporary test dependencies are separate from the repository under `/tmp/contest-brand-check/test-deps`. The existing OpenNook browser-tools image provides Node/Playwright and the existing Chromium cache; it is verification tooling only. Exact final focused commands, run from the ContestCheck repository unless an absolute path is shown:
+
+```bash
+docker run --rm --network none --user 1000:1000 \
+  --mount type=bind,src=/mnt/c/P/ghpub/www-temp/contest-check-ai,dst=/repo,readonly \
+  --mount type=bind,src=/tmp/contest-brand-check,dst=/checks \
+  --workdir /repo --env PYTHONPATH=/repo/src:/checks/test-deps \
+  --env PYTHONDONTWRITEBYTECODE=1 --entrypoint python contest-check-app:local \
+  -m pytest -q -p no:cacheprovider tests/test_ui.py tests/test_authoring_ui.py
+# Same docker-run wrapper, replacing the pytest arguments:
+# -m ruff check --no-cache .
+# -m ruff format --check --no-cache .
+docker compose -f compose.yaml config --quiet
+docker compose -f compose.yaml -f compose.judge.yaml build web api
+docker compose -f compose.yaml -f compose.judge.yaml up -d --no-deps --force-recreate --wait --wait-timeout 90 api web
+docker run --rm --network host \
+  --mount type=bind,src=/mnt/c/P/ghpub/www-temp/open-nook-ai,dst=/tools,readonly \
+  --mount type=bind,src=/tmp/contest-brand-check,dst=/checks \
+  --mount type=bind,src=/home/zsolti-wsl/.cache/ms-playwright,dst=/ms-playwright,readonly \
+  --env PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
+  open-nook-ai-browser-tools node /checks/review.mjs
+python3 /tmp/contest-brand-check/audit.py
+git -c core.whitespace=cr-at-eol diff HEAD --check
+```
+
+Focused pytest: **50 passed in 22.88s**, including a regression proving that opening About preserves a validated batch and prepared PDF/XLSX bytes. Existing UI button tests now select their action by label, so adding About cannot retarget judging actions. Ruff check passed; **94 files already formatted**. A first read-only lint invocation needed `--no-cache`; a subsequent one-line formatting finding was corrected. The final Python change after the 50-test run is quote formatting only. SVG XML and preserved CRLF/whitespace checks passed.
+
+### Live Docker audit
+
+Both final services are healthy. Web publishes only **127.0.0.1:33080 → 8501**, API only **127.0.0.1:33081 → 8000**. All three service restart policies resolve to `no`; dependency-triggered restarts are false. The existing `.env` already held this 33080/33081 allocation and was not changed or exposed. The old live 43871/43872 containers were replaced. The existing stopped prerequisite worker remains Exited (0), with no ports/mounts; `--no-deps` avoids re-running it during this UI refresh. No application volume was removed or introduced.
+
+The previously authorized judge mode is retained with both Compose files: only the trusted API has the daemon socket, while web and the worker have no host mounts or provider credentials. Health/catalog GETs passed with **five configured models, zero catalog issues**. No generation or worker job was requested. SHA-256 checks confirm that both deployed images contain the exact reviewed `branding.py`, `ui.py`, CSS, metadata, icon and poster bytes.
+
+Final images: web `sha256:ae9af362bbe7486dd4581b00ee348b51134e9f2204fcf0580c40505ec6cd0c87`; API `sha256:3e19e044f400d45b63794d0c28fbf81368631e8633df9aeff221660749c0082a`. Runtime IDs, hashes and configuration audit are stored with local evidence.
+
+### Final browser proof and limits
+
+The final browser command ran against the rebuilt live service **without injected test CSS**. All four fresh contexts passed: 1440×1000 light/dark, 390×844 and 320×740. The sidebar starts expanded and its footer stays at the viewport bottom; native collapse/expand and both workspaces work. The navbar icon/favicon and original poster load locally, all configured About URLs match, the five inline link icons render, and keyboard tooltips stay within the viewport with full URLs. Escape and the native Close button dismiss About. Opening/closing About preserves the selected workspace and typed Topic. No horizontal overflow, browser page errors or external browser requests were observed. At 320 px the centered dialog remains inside the screen and scrolls vertically. Desktop, dark and phone screenshots were visually inspected.
+
+An early browser-harness attempt clicked the radio's hidden input and timed out; using the native visible label resolved the harness issue. Early screenshots required waiting for Streamlit's finished script/layout and native animations. The final checks wait for these states and verify the whole icon and dialog bounds. Initial style previews were separate from the final uninjected runtime proof.
+
+Ignored evidence: `.runtime/branding-20261019/` contains `browser-results.json`, `runtime-results.json`, the exact helpers and final screenshots. Existing staged/unstaged work was retained; the Git index remains empty. No commit/push.
+
+**Not run in this UI follow-up:** the full backend pytest suite, live/paid model calls, new contestant/reference execution or fresh worker qualification, another disabled-mode runtime deployment, Docker Desktop GUI capture, other browser engines/hosts, hosted CI or publication. The focused tests use mocked providers/workers; earlier judge/worker proofs remain historical evidence rather than new results from this change.
+
+
+### Commit authorization and review — 2026-10-19
+
+The user explicitly requested committing the ContestCheck changes. The reviewed scope includes the shared branding catalog/artwork, expanded workspace sidebar and attribution, navbar/About, packaged assets, UI regression coverage, loopback 33080/33081 ports, manual-only restart rules and related documentation. No application behavior changed after the preceding 50-test/browser/runtime proof; those checks were not repeated solely for the commit. Ruff check, formatting (94 files), both quiet Compose configuration checks and whitespace checks passed again. Before staging, the index was empty; current source/artwork hashes match the recorded deployed evidence. The commit review also checks the exact pending path set, ignored private environment/runtime files, absence of actual local credential values, preserved line endings and staged blobs against the reviewed bytes. The user's authorization covers the local commit only.

@@ -1,0 +1,27 @@
+<!-- SPDX-FileCopyrightText: 2026 Keresztes Zsolt <https://kereszteszsolt.hu>
+SPDX-License-Identifier: Apache-2.0 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">ContestCheck AI</title>
+  <desc id="desc">A tilted code sheet, coral judge stamp and mint accepted check on warm cream, echoing the ContestCheck poster.</desc>
+  <rect width="64" height="64" rx="16" fill="#fff0dc"/>
+  <ellipse cx="33" cy="43" rx="26" ry="16" fill="#f5ddbf"/>
+  <g transform="rotate(-10 25 35)">
+    <rect x="11" y="17" width="30" height="39" rx="4" fill="#ddc5ae"/>
+    <path d="M13 14h19l8 8v29a4 4 0 0 1-4 4H13a4 4 0 0 1-4-4V18a4 4 0 0 1 4-4Z" fill="#fffdf6" stroke="#dfcfc0" stroke-width="1.5"/>
+    <path d="M32 14v8h8" fill="#f2decc" stroke="#dfcfc0" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="m19 28-5 5 5 5m12-10 5 5-5 5m-4-13-5 16" fill="none" stroke="#d25c57" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M15 46h17m-17 5h12" stroke="#dfcfc0" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <g transform="rotate(15 47 22)">
+    <rect x="42" y="7" width="10" height="15" rx="4.5" fill="#63384b"/>
+    <path d="M45 20h4v8h-4Z" fill="#63384b"/>
+    <path d="M38 27h18l5 7H33Z" fill="#e17b6c" stroke="#63384b" stroke-width="1.5" stroke-linejoin="round"/>
+    <rect x="32" y="33" width="30" height="4" rx="1.8" fill="#63384b"/>
+    <path d="M45 10h3" stroke="#9b6875" stroke-width="1.5" stroke-linecap="round"/>
+  </g>
+  <circle cx="45" cy="47" r="12" fill="#dcead5" stroke="#468468" stroke-width="2.5"/>
+  <path d="m39 47 4 4 8-9" fill="none" stroke="#347457" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="58" cy="57" r="4" fill="#f4c6bb"/>
+  <path d="m56.5 55.5 3 3m0-3-3 3" stroke="#a84d50" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="m13 5 1.7 4.3L19 11l-4.3 1.7L13 17l-1.7-4.3L7 11l4.3-1.7Z" fill="#d3a27c"/>
+</svg>

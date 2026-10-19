@@ -13,6 +13,7 @@
 !src/contest_check/judge/
 !src/contest_check/judge/*.py
 !src/contest_check/assets/
+!src/contest_check/assets/branding.css
 !src/contest_check/assets/fonts/
 !src/contest_check/assets/fonts/*.ttf
 !src/contest_check/assets/fonts/LICENSE-DejaVu.txt
@@ -21,3 +22,8 @@
 !deploy/app/LICENSE-Docker-CLI.txt
 !deploy/worker/
 !deploy/worker/docker-seccomp.json
+!brand/
+!brand/branding.json
+!brand/assets/
+!brand/assets/*.svg
+!brand/assets/*.png

@@ -13,6 +13,10 @@ from contest_check.ui import local_api_url
 APP_PATH = Path(__file__).resolve().parents[1] / "streamlit_app.py"
 
 
+def button(page, label):
+    return next(item for item in page.button if item.label == label)
+
+
 @pytest.fixture(autouse=True)
 def judge_health(monkeypatch):
     def get(client, path, **kwargs):
@@ -43,8 +47,8 @@ def test_ui_starts_with_disabled_execution():
     assert not page.exception
     assert page.title[0].value == "ContestCheck AI"
     assert len(page.get("file_uploader")) == 2
-    assert page.button[0].disabled
-    assert page.button[1].disabled
+    assert button(page, "Validate archives").disabled
+    assert button(page, "Run solutions").disabled
     assert "validate" in page.info[0].value
 
 
@@ -77,7 +81,7 @@ def test_ui_upload_states(task_zip, submissions_zip, monkeypatch, outcome):
 
     monkeypatch.setattr(httpx.Client, "post", post)
     page = AppTest.from_file(APP_PATH).run()
-    page.button[0].click().run()
+    button(page, "Validate archives").click().run()
     assert not page.exception
     if outcome == "success":
         assert page.success
@@ -123,14 +127,14 @@ def judging_page(task_zip, submissions_zip, report_batch, monkeypatch):
 
     monkeypatch.setattr(httpx.Client, "post", post)
     page = AppTest.from_file(APP_PATH).run()
-    page.button[0].click().run()
+    button(page, "Validate archives").click().run()
     return page
 
 
 def test_ui_runs_displays_all_results_and_prepares_downloads(judging_page):
     page = judging_page
-    assert not page.button[1].disabled
-    page.button[1].click().run()
+    assert not button(page, "Run solutions").disabled
+    button(page, "Run solutions").click().run()
     assert not page.exception
     assert page.session_state["judge_status"] == "completed"
     assert len(page.dataframe) == 4
@@ -146,7 +150,7 @@ def test_ui_runs_displays_all_results_and_prepares_downloads(judging_page):
 
 def test_upload_changes_clear_results_and_downloads(judging_page, monkeypatch):
     page = judging_page
-    page.button[1].click().run()
+    button(page, "Run solutions").click().run()
     page.button(key="prepare_reports").click().run()
     callbacks = []
 
@@ -162,12 +166,25 @@ def test_upload_changes_clear_results_and_downloads(judging_page, monkeypatch):
     assert page.session_state["validation_status"] == "idle"
     assert page.session_state["reports"] == {}
     assert len(page.dataframe) == 0 and len(page.get("download_button")) == 0
-    assert page.button[1].disabled
+    assert button(page, "Run solutions").disabled
+
+
+def test_about_preserves_validated_batch_and_prepared_reports(judging_page):
+    page = judging_page
+    button(page, "Run solutions").click().run()
+    page.button(key="prepare_reports").click().run()
+    batch = page.session_state["batch_result"]
+    reports = dict(page.session_state["reports"])
+    page.button(key="about_dialog").click().run()
+    assert not page.exception
+    assert page.session_state["validation_status"] == "validated"
+    assert page.session_state["batch_result"] == batch
+    assert page.session_state["reports"] == reports
 
 
 def test_ui_preserves_results_when_report_service_fails(judging_page, monkeypatch):
     page = judging_page
-    page.button[1].click().run()
+    button(page, "Run solutions").click().run()
     monkeypatch.setattr(
         httpx.Client,
         "post",
@@ -193,7 +210,7 @@ def test_ui_judging_errors_keep_downloads_unavailable(judging_page, monkeypatch,
         return httpx.Response(503, json={"code": "execution_disabled", "message": "Disabled"})
 
     monkeypatch.setattr(httpx.Client, "post", post)
-    page.button[1].click().run()
+    button(page, "Run solutions").click().run()
     assert not page.exception
     assert page.error and page.session_state["judge_status"] == "error"
     assert len(page.dataframe) == 0 and page.session_state["reports"] == {}
@@ -224,7 +241,7 @@ def test_ui_incomplete_batch_does_not_show_unrun_tests_as_failed(
             findings=[],
         )
     monkeypatch.setattr(httpx.Client, "post", lambda *a, **k: httpx.Response(200, json=value))
-    page.button[1].click().run()
+    button(page, "Run solutions").click().run()
     assert not page.exception and page.warning
     assert page.session_state["judge_status"] == "incomplete"
     assert set(page.dataframe[1].value["Outcome"]) == {"System error", "Not run"}
@@ -232,7 +249,7 @@ def test_ui_incomplete_batch_does_not_show_unrun_tests_as_failed(
 
 def test_invalid_download_bytes_never_become_a_download(judging_page, monkeypatch):
     page = judging_page
-    page.button[1].click().run()
+    button(page, "Run solutions").click().run()
     monkeypatch.setattr(
         httpx.Client,
         "post",
@@ -271,7 +288,7 @@ def test_disabled_or_unconfirmed_judge_cannot_run_validated_uploads(
     page = judging_page.run()
     assert not page.exception
     assert page.session_state["validation_status"] == "validated"
-    assert page.button[1].disabled
+    assert button(page, "Run solutions").disabled
     assert any("execution is disabled" in item.value for item in page.info) or page.warning
     assert not page.session_state["reports"]
 
@@ -282,7 +299,7 @@ def test_offline_judge_has_safe_message_and_recovers(judging_page, monkeypatch):
 
     monkeypatch.setattr(httpx.Client, "get", unavailable)
     page = judging_page.run()
-    assert not page.exception and page.button[1].disabled
+    assert not page.exception and button(page, "Run solutions").disabled
     assert "Cannot confirm" in page.warning[0].value
     assert "PRIVATE" not in page.warning[0].value
     monkeypatch.setattr(
@@ -295,7 +312,7 @@ def test_offline_judge_has_safe_message_and_recovers(judging_page, monkeypatch):
         ),
     )
     page.run()
-    assert not page.exception and not page.button[1].disabled
+    assert not page.exception and not button(page, "Run solutions").disabled
 
 
 def test_compose_api_address_uses_only_the_fixed_service_name(monkeypatch):

@@ -29,6 +29,10 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/contest_check"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"brand/branding.json" = "contest_check/assets/brand/branding.json"
+"brand/assets" = "contest_check/assets/brand/assets"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"

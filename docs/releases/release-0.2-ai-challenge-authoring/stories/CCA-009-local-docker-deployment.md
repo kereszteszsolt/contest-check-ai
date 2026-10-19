@@ -19,7 +19,7 @@ CCA-001–008, a local Linux-container Docker daemon/Compose, the existing revie
 ## Acceptance criteria
 
 - [x] One documented Compose workflow builds the locked Python application and starts healthy UI/API services with loopback-only published ports; restart/stop commands are provided.
-- [x] Project-specific host ports default to 43871 (web) and 43872 (API), with loopback bindings and independent fixed internal ports. The UI explains disabled/unavailable judging before submission.
+- [x] Project-specific host ports default to 33080 (web) and 33081 (API), with loopback bindings, independent fixed internal ports and manual restarts only (`restart: "no"`, dependency restarts disabled). The UI explains disabled/unavailable judging before submission.
 - [x] The same Compose project always shows web, API and the stopped judge-worker prerequisite-check service, even with judging disabled (latest user clarification, 2026-10-18). Each port belongs only to its serving container. Actual job workers group under that project while running and are removed afterward; the stopped service remains.
 - [x] The teacher UI hides Streamlit developer controls (Deploy, Rerun, Clear cache and auto rerun) while retaining native System/Light/Dark themes, Print and browser-supported Record screen.
 - [x] Runtime containers use a non-root account, bounded resources, read-only root and temporary scratch storage. No local credentials, runtime uploads or Git checkout are copied into the image.

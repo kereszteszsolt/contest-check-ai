@@ -1,0 +1,17 @@
+{
+  "appName": "ContestCheck AI",
+  "appTagline": "Create programming challenges, evaluate anonymous submissions, and review objective results.",
+  "appDescription": "A self-hosted automated Python judge for teachers, programming competitions and independent practice, with optional AI-assisted challenge drafting.",
+  "appWebsite": "",
+  "appGithubUrl": "https://github.com/kereszteszsolt/contest-check-ai",
+  "appFavicon": "assets/contest-check-ai-icon.svg",
+  "appIcon": "assets/contest-check-ai-icon.svg",
+  "appPoster": "assets/contest-check-ai-poster.svg",
+  "authorName": "Keresztes Zsolt",
+  "authorWebsite": "https://kereszteszsolt.hu",
+  "authorWebsiteLanguages": ["hu", "en", "ro", "de"],
+  "authorGithub": "https://github.com/kereszteszsolt",
+  "authorWaysToSupportUrl": "https://kereszteszsolt.hu/ways-to-support",
+  "authorBuyMeACoffeeUrl": "https://buymeacoffee.com/kereszteszsolt",
+  "supportRemarkText": "Support is voluntary and does not create any obligation, priority service, special access or other consideration. Thank you for your attention, and also if you support my work in any way!"
+}

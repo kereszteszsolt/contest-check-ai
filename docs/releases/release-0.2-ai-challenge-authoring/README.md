@@ -14,6 +14,6 @@ Given teacher instructions, produce a **reviewable** algorithm challenge draft w
 | [CCA-006](stories/CCA-006-langgraph-generation-and-tools.md) | Bounded LangGraph / sandbox-backed test tools | Implemented; actual graph/API with mocked models/workers, live checks Not run |
 | [CCA-007](stories/CCA-007-student-teacher-artifact-packages.md) | PDF + examples/starter ZIP, private test ZIP | Implemented; synthetic ZIP/PDF/API checks and visual PDF inspection, live reference Not run |
 | [CCA-008](stories/CCA-008-teacher-approval-and-verification.md) | HITL approval, UI, security tests, CI and docs | Implemented; actual UI/API/graph with mocks, synthetic browser decisions and ZIP/PDF checks; live provider/reference Not run |
-| [CCA-009](stories/CCA-009-local-docker-deployment.md) | Local Docker UI/API deployment and isolated Linux judge execution | Implemented; approved local judge mode, real benign verdict/export/cleanup checks, 43871/43872 host ports |
+| [CCA-009](stories/CCA-009-local-docker-deployment.md) | Local Docker UI/API deployment and isolated Linux judge execution | Implemented; approved local judge mode, real benign verdict/export/cleanup checks, 33080/33081 loopback host ports; manual restarts only |
 
 No RAG, GitHub access, arbitrary web fetching, auto-publication, advanced scoring, custom checker execution or multi-agent swarm. Observed evidence belongs in [verification.md](verification.md).

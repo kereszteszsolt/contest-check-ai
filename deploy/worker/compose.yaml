@@ -1,3 +1,5 @@
+name: contest-check-ai
+
 services:
   judge-worker:
     build:

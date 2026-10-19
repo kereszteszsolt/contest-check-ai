@@ -11,6 +11,8 @@
 
 > **Current state: Releases 0.1 / CCA-001–004 and 0.2 / CCA-005–008 are implemented with local evidence.** The judge requires explicit operator settings and a separately qualified offline worker. Release 0.2 has configured model adapters, bounded LangGraph checkpoints, teacher review and separate ZIP/PDF exports through Streamlit. Authoring tests use mocked model/worker responses; a separate CCA-009 deployment smoke also passed two real isolated reference checks from a fixed benign draft. Actual graph, API, UI and artifact behavior is exercised. No live model, generated-reference execution or independent challenge correctness review is claimed. Historical Docker/WSL2 sandbox evidence, current authoring checks and their limits are recorded separately in [Release 0.1 evidence](docs/releases/release-0.1-automated-judge/verification.md) and [Release 0.2 evidence](docs/releases/release-0.2-ai-challenge-authoring/verification.md). See [local setup](docs/local-development.md), [models](docs/model-configuration.md), [workflow](docs/authoring-workflow.md), [packages](docs/challenge-packages.md), [judging](docs/judging.md) and [worker boundaries](docs/judge-worker.md). Hosted CI/public deployment are not verified.
 
+The sidebar starts expanded with both workspace choices and current-year author/license links at the bottom. The navbar uses the project SVG icon and opens About with the original poster, project/author links and voluntary-support details. Display metadata and artwork live in [brand/](brand/README.md).
+
 ## What will users do?
 
 **Judge mode (Release 0.1)**
@@ -165,11 +167,13 @@ Open <http://127.0.0.1:8501>. For authoring, configure only the API environment 
 
 ## Local Docker setup — CCA-009
 
+The Compose project is `contest-check-ai`, including standalone worker commands. Published host ports 33080 (web) and 33081 (API) bind only to `127.0.0.1`; keep overrides above 33000 and unique across repositories. Every service uses `restart: "no"`, and dependency-triggered restarts are disabled. Start stopped containers explicitly with Compose.
+
 ```bash
 docker compose up -d --build --wait
 ```
 
-Open <http://127.0.0.1:43871>; API health is <http://127.0.0.1:43872/health>. These project-specific host ports are configurable with `APP_PORT`/`API_PORT`; existing `.env` entries must be updated separately. Internal container ports remain unchanged. Compose reads model settings from the ignored root `.env` and gives credentials only to API. **Default mode disables code execution.** The optional reviewed judge mode uses separate offline Linux/NsJail workers and requires explicit approval for the trusted API's Docker administration access. That access was approved and the local end-to-end benign judge/export/cleanup smoke passed on 2026-10-18. Web, API and a stopped prerequisite-check worker remain grouped in one project; extra per-test workers join during execution and are deleted afterward. Web/API each publish only their own port; use the documented two-file Compose command to retain judge mode on restart. See [Docker setup and operator checks](docs/local-development.md#docker-deployment--cca-009), [CCA-009](docs/releases/release-0.2-ai-challenge-authoring/stories/CCA-009-local-docker-deployment.md) and [evidence](docs/releases/release-0.2-ai-challenge-authoring/verification.md). No live model call occurs at startup.
+Open <http://127.0.0.1:33080>; API health is <http://127.0.0.1:33081/health>. These project-specific host ports are configurable with `APP_PORT`/`API_PORT`; existing `.env` entries must be updated separately. Internal container ports remain unchanged. Compose reads model settings from the ignored root `.env` and gives credentials only to API. **Default mode disables code execution.** The optional reviewed judge mode uses separate offline Linux/NsJail workers and requires explicit approval for the trusted API's Docker administration access. That access was approved and the local end-to-end benign judge/export/cleanup smoke passed on 2026-10-18. Web, API and a stopped prerequisite-check worker remain grouped in one project; extra per-test workers join during execution and are deleted afterward. Web/API each publish only their own port; use the documented two-file Compose command to retain judge mode on restart. See [Docker setup and operator checks](docs/local-development.md#docker-deployment--cca-009), [CCA-009](docs/releases/release-0.2-ai-challenge-authoring/stories/CCA-009-local-docker-deployment.md) and [evidence](docs/releases/release-0.2-ai-challenge-authoring/verification.md). No live model call occurs at startup.
 
 ## Roadmap, stories and verification
 

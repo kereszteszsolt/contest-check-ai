@@ -67,6 +67,8 @@ The harness needs separately installed Node/Playwright/Chromium; it starts real 
 
 ## Docker deployment — CCA-009
 
+The Compose project is `contest-check-ai`, including standalone worker commands. Published host ports 33080 (web) and 33081 (API) bind only to `127.0.0.1`; keep overrides above 33000 and unique across repositories. Every service uses `restart: "no"`, and dependency-triggered restarts are disabled. Start stopped containers explicitly with Compose.
+
 The root `compose.yaml` builds Streamlit and FastAPI using the exact Python 3.12.13 / uv 0.11.29 image digests and existing lockfile. It uses separate non-root, read-only containers with bounded CPU/memory/processes and temporary scratch storage. The worker-specific build context is unchanged. The application Dockerfile has its own allowlist so `.env`, `.git`, uploads, runtime artifacts and local virtual environments never enter the build context/image.
 
 From the repository root, create `.env` from `.env.example` only if it does not already exist; retain existing provider credentials/settings. Unlike native Python startup, **Docker Compose reads the root `.env` for interpolation**. Only explicitly listed provider settings/keys go to API; web receives only its fixed internal API host/port. No model request occurs during startup or catalog/health lookup.
@@ -75,10 +77,10 @@ From the repository root, create `.env` from `.env.example` only if it does not 
 docker compose config --quiet
 docker compose up -d --build --wait
 docker compose ps
-curl --fail http://127.0.0.1:43872/health
+curl --fail http://127.0.0.1:33081/health
 ```
 
-Open <http://127.0.0.1:43871>. The project defaults are `APP_PORT=43871` (web) and `API_PORT=43872` (API). Both were available on the reviewed host; no fixed port can guarantee availability on another machine. Existing `.env` files override these defaults, so update both entries when migrating. Container ports remain 8501/8000. Both published ports bind only to `127.0.0.1`. Web and API have separate network namespaces on the project bridge; web calls only `http://api:8000`. Web publishes only 43871→8501, API only 43872→8000, and the worker publishes no ports. The shared image advertises no additional unused ports. All three service containers belong to the same Compose project.
+Open <http://127.0.0.1:33080>. The project defaults are `APP_PORT=33080` (web) and `API_PORT=33081` (API). These defaults continue the shared 33000-series port allocation. Existing `.env` files override these defaults, so update both entries when migrating. Container ports remain 8501/8000. Both published ports bind only to `127.0.0.1`. Web and API have separate network namespaces on the project bridge; web calls only `http://api:8000`. Web publishes only 33080→8501, API only 33081→8000, and the worker publishes no ports. The shared image advertises no additional unused ports. All three service containers belong to the same Compose project.
 
 **Default mode intentionally returns `execution_enabled: false`.** Validation, authoring/catalog/review and packaging work without a Docker socket. Run solutions is disabled in the UI; direct API execution is refused and requested reference checks remain blocked. This default cannot execute a submission even if the root `.env` contains judge flags. The explicit judge override below is required. No Docker-in-Docker daemon or worker network server is added.
 
@@ -138,6 +140,6 @@ uv run --frozen python scripts/verify_docker_app.py
 uv run --frozen python scripts/verify_docker_app.py --reviewed-profile
 ```
 
-This optional operator script defaults to the Docker host ports 43872/43871; pass `--api-port` and `--web-port` for overrides or native services. It uses fixed benign CCA-003 fixtures and a loopback API only. Without the explicit flag it never submits executable fixtures to an enabled judge. In default mode it checks health, catalog, valid/invalid archives and the expected 503 execution-disabled response. In enabled mode it checks observed AC/WA/TLE/RE, objective DQ/REVIEW and PDF/XLSX exports through the actual running API. It never calls a model or runs program source on the host. It is not run by pytest/CI.
+This optional operator script defaults to the Docker host ports 33081/33080; pass `--api-port` and `--web-port` for overrides or native services. It uses fixed benign CCA-003 fixtures and a loopback API only. Without the explicit flag it never submits executable fixtures to an enabled judge. In default mode it checks health, catalog, valid/invalid archives and the expected 503 execution-disabled response. In enabled mode it checks observed AC/WA/TLE/RE, objective DQ/REVIEW and PDF/XLSX exports through the actual running API. It never calls a model or runs program source on the host. It is not run by pytest/CI.
 
 Docker/uv references: [Compose networking](https://docs.docker.com/compose/how-tos/networking/), [Dockerfile-specific context allowlists](https://docs.docker.com/build/concepts/context/#dockerignore-files), [uv multi-stage locked installs](https://docs.astral.sh/uv/guides/integration/docker/).
